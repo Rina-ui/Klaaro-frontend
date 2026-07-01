@@ -6,6 +6,7 @@ import Step3BasicInfo from "../pages/onboarding/Step3BasicInfo.tsx";
 import Step4Welcome from "../pages/onboarding/Step4Welcome.tsx";
 import DashboardPage from "../pages/dashboard/DashboardPage.tsx";
 import UploadPage from "../pages/Upload/UploadPage.tsx";
+import PredictionsPage from "../pages/Prediction/PredictionPage.tsx";
 
 
 export default function AppRouter() {
@@ -21,7 +22,8 @@ export default function AppRouter() {
     {/*<Route path="/login" element={<LoginPage />} />*/}
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/upload" element={<UploadPage />} />
-    </Routes>
+                <Route path="/prediction" element={<PredictionsPage />} />
+            </Routes>
     </BrowserRouter>
 )
 }
