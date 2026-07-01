@@ -1,139 +1,243 @@
-import { Search, Bell, AlertTriangle, TrendingUp, MessageCircle } from 'lucide-react'
-import Sidebar from '../../components/ui/Sidebar'
-import {colors} from "../../../styles/token.ts";
+import React, { useState } from 'react';
+import {
+  LayoutDashboard, FileText, BarChart3, Calendar, Users, FolderHeart,
+  Settings, LogOut, Search, Bell, MessageSquare, ChevronDown, MoreVertical,
+  CheckCircle2, Database, UploadCloud, Cpu, type LucideIcon, Menu, MessageCircle
+} from 'lucide-react';
 
-const alerts = [
-  { label: 'Anomalie transaction', trend: 'Critique', positive: false },
-  { label: 'Ventes en hausse', trend: '+12%', positive: true },
-]
+// --- INTERFACES TYPES ---
+interface StatCard { title: string; value: string; }
+interface FileItem { name: string; size: string; }
+interface ActivityItem { type: string; text: string; sub: string; time: string; icon: LucideIcon; color: string; }
 
-export default function DashboardPage() {
+export default function Dashboard(): React.JSX.Element {
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+
+  const topStats: StatCard[] = [
+    { title: "Fichiers uploadés", value: "48" },
+    { title: "Analyses réalisées", value: "173" },
+    { title: "Prédictions", value: "820" },
+    { title: "Earnings", value: "$682.50" },
+  ];
+
+  const recentFiles: FileItem[] = [
+    { name: "ventes_2024.csv", size: "2.4 Mo" },
+    { name: "clients.xlsx", size: "1.8 Mo" },
+    { name: "transactions.sql", size: "3.7 Mo" },
+    { name: "marketing_data.csv", size: "5.2 Mo" },
+    { name: "rapport_q2.xlsx", size: "4.1 Mo" },
+  ];
+
+  const recentActivity: ActivityItem[] = [
+    { type: "analysis", text: "Analyse terminée", sub: "ventes_2024.csv", time: "5m", icon: CheckCircle2, color: "text-green-500 bg-green-50" },
+    { type: "prediction", text: "Prédiction générée", sub: "Modèle XGBoost", time: "15m", icon: Cpu, color: "text-blue-500 bg-blue-50" },
+    { type: "upload", text: "Fichier uploadé", sub: "marketing_data.csv", time: "1h", icon: UploadCloud, color: "text-purple-500 bg-purple-50" },
+    { type: "db", text: "Connexion DB réussie", sub: "PostgreSQL", time: "2h", icon: Database, color: "text-emerald-500 bg-emerald-50" },
+  ];
+
   return (
-      <div style={{ backgroundColor: colors.background }} className="h-screen p-3 overflow-hidden">
-        <div style={{ backgroundColor: colors.surfaceContainerLow }} className="mx-auto max-w-[1100px] h-full rounded-3xl p-3 flex gap-3">
+      <div className="min-h-screen bg-[#f8f9fa] text-[#1a1a1a] font-sans flex p-4 md:p-6 gap-0 overflow-x-hidden relative items-start">
 
-          <Sidebar />
-
-          <main className="flex-1 flex flex-col gap-2.5 min-w-0">
-
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 style={{ color: colors.onSurface }} className="text-base font-medium">Bonjour, Koffi</h1>
-                <p style={{ color: colors.onSurfaceVariant }} className="text-[11px]">État de votre business aujourd'hui</p>
+        {/* 1. SIDEBAR */}
+        <aside
+            className={`
+          fixed top-6 left-6 z-50 flex flex-col justify-between items-center bg-white border border-gray-100 shadow-sm
+          transition-all duration-500 ease-in-out cursor-pointer select-none
+          ${isCollapsed
+                ? 'w-16 h-16 rounded-full py-0 justify-center hover:bg-gray-50'
+                : 'w-20 h-[calc(100vh-48px)] rounded-[40px] py-8'
+            }
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+            onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          {isCollapsed ? (
+              <div className="text-gray-800 transition-transform duration-300 transform scale-110">
+                <Menu size={24} />
               </div>
-              <div className="flex items-center gap-1.5">
-                <div style={{ backgroundColor: colors.surfaceContainer }} className="rounded-full px-3 py-1 flex items-center gap-1.5 w-28">
-                  <Search className="h-3 w-3" style={{ color: colors.onSurfaceVariant }} />
-                  <span style={{ color: colors.onSurfaceVariant }} className="text-[11px]">Rechercher...</span>
+          ) : (
+              <>
+                <div className="flex flex-col items-center gap-6 w-full" onClick={(e) => e.stopPropagation()}>
+                  <button className="p-4 bg-[#1a1a1a] text-white rounded-full shadow-md transition-transform active:scale-95">
+                    <LayoutDashboard size={20} />
+                  </button>
+                  <button className="p-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors"><FileText size={20} /></button>
+                  <button className="p-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors"><BarChart3 size={20} /></button>
+                  <button className="p-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors"><Calendar size={20} /></button>
+                  <button className="p-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors"><Users size={20} /></button>
+                  <button className="p-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors"><FolderHeart size={20} /></button>
                 </div>
-                <button style={{ backgroundColor: colors.surfaceContainer }} className="h-6.5 w-6.5 rounded-full flex items-center justify-center">
-                  <Bell className="h-3 w-3" style={{ color: colors.onSurfaceVariant }} />
-                </button>
-              </div>
+
+                <div className="flex flex-col items-center gap-5 w-full" onClick={(e) => e.stopPropagation()}>
+                  <button className="p-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors"><Settings size={20} /></button>
+                  <button className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={20} /></button>
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm mt-2">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Marina profile" className="w-full h-full object-cover" />
+                  </div>
+                </div>
+              </>
+          )}
+        </aside>
+
+        {/* Overlay Mobile */}
+        {sidebarOpen && <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/20 z-40 md:hidden" />}
+
+        {/* 2. AREA CONTENU */}
+        <main className={`flex-1 flex flex-col w-full max-w-[1600px] mx-auto transition-all duration-500 ease-in-out ${isCollapsed ? 'md:pl-24' : 'md:pl-28'}`}>
+
+          {/* HEADER */}
+          <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
+            <div>
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden mb-2 text-sm bg-white px-3 py-1 rounded-md border border-gray-200 font-medium">Menu</button>
+              <h1 className="text-xl font-bold tracking-tight">Hello, Marina!</h1>
             </div>
 
-            {/* Stat cards */}
-            <div className="grid grid-cols-4 gap-2">
-              <div style={{ backgroundColor: colors.surfaceContainer }} className="rounded-xl p-2.5">
-                <div style={{ color: colors.onSurfaceVariant }} className="text-[10px]">Score de santé</div>
-                <div style={{ color: colors.onSurface }} className="text-lg font-medium mt-0.5">78<span className="text-[11px] font-normal">/100</span></div>
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <div className="relative w-full max-w-xs hidden sm:block">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+                <input type="text" placeholder="Rechercher..." className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-100 rounded-full text-xs focus:outline-none focus:border-gray-300" />
               </div>
-              <div style={{ backgroundColor: colors.surfaceContainer }} className="rounded-xl p-2.5">
-                <div className="flex items-center gap-1.5">
-                  <div style={{ backgroundColor: colors.errorContainer }} className="h-5.5 w-5.5 rounded-full flex items-center justify-center shrink-0">
-                    <AlertTriangle className="h-2.5 w-2.5" style={{ color: colors.error }} />
-                  </div>
-                  <div style={{ color: colors.onSurfaceVariant }} className="text-[10px]">Anomalies</div>
-                </div>
-                <div style={{ color: colors.onSurface }} className="text-lg font-medium mt-1">2</div>
-              </div>
-              <div style={{ backgroundColor: colors.surfaceContainer }} className="rounded-xl p-2.5">
-                <div className="flex items-center gap-1.5">
-                  <div style={{ backgroundColor: colors.primaryFixed }} className="h-5.5 w-5.5 rounded-full flex items-center justify-center shrink-0">
-                    <TrendingUp className="h-2.5 w-2.5" style={{ color: colors.primary }} />
-                  </div>
-                  <div style={{ color: colors.onSurfaceVariant }} className="text-[10px]">Prédiction J+7</div>
-                </div>
-                <div style={{ color: colors.onSurface }} className="text-base font-medium mt-1">185k</div>
-              </div>
-              <div style={{ backgroundColor: colors.primary }} className="rounded-xl p-2.5 text-white">
-                <div className="text-[10px] opacity-70">Score sécurité</div>
-                <div className="text-lg font-medium mt-0.5">64%</div>
-              </div>
+              <button className="p-2 bg-white border border-gray-100 rounded-full text-gray-600 relative hover:bg-gray-50">
+                <MessageSquare size={15} />
+              </button>
+              <button className="p-2 bg-white border border-gray-100 rounded-full text-gray-600 hover:bg-gray-50"><Bell size={15} /></button>
             </div>
+          </header>
 
-            {/* Row 2 */}
-            <div className="grid grid-cols-[1.6fr_1fr_1fr] gap-2 min-h-0">
-              <div style={{ backgroundColor: colors.surfaceContainer }} className="rounded-xl p-3 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span style={{ color: colors.onSurface }} className="text-sm font-medium">Évolution ventes</span>
-                  <span style={{ color: colors.onSurfaceVariant }} className="text-[10px]">30 jours</span>
+          {/* STATS HAUT */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+            {topStats.map((stat, i) => (
+                <div key={i} className="bg-white p-3.5 rounded-xl border border-gray-100 flex flex-col justify-center min-h-[75px]">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{stat.title}</p>
+                  <h3 className="text-lg font-bold mt-0.5">{stat.value}</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5 mt-2">
-                  <div style={{ backgroundColor: colors.surfaceContainerLow }} className="rounded-lg px-2 py-1.5">
-                    <div style={{ color: colors.onSurfaceVariant }} className="text-[9px]">Ce mois</div>
-                    <div style={{ color: colors.onSurface }} className="text-xs font-medium">450k <span style={{ backgroundColor: colors.primaryFixed, color: colors.primary }} className="text-[9px] rounded-full px-1">+12%</span></div>
-                  </div>
-                  <div style={{ backgroundColor: colors.surfaceContainerLow }} className="rounded-lg px-2 py-1.5">
-                    <div style={{ color: colors.onSurfaceVariant }} className="text-[9px]">Panier moyen</div>
-                    <div style={{ color: colors.onSurface }} className="text-xs font-medium">8500 <span style={{ backgroundColor: colors.errorContainer, color: colors.error }} className="text-[9px] rounded-full px-1">-5%</span></div>
-                  </div>
-                </div>
-                <svg viewBox="0 0 260 40" className="w-full h-8 mt-1.5">
-                  <path d="M0,28 C20,30 25,18 40,20 C55,22 50,30 65,28 C80,26 75,10 90,11 C105,12 100,28 115,26 C130,24 125,14 140,15 C155,16 152,8 167,9 C182,10 180,18 195,18 C210,18 215,14 230,13 C245,12 250,14 260,14" fill="none" stroke={colors.primary} strokeWidth="2" />
+            ))}
+            <div className="bg-[#1e5138] text-white p-3.5 rounded-xl flex flex-col justify-center min-h-[75px] lg:col-span-1 sm:col-span-2">
+              <p className="text-[10px] font-semibold opacity-70 uppercase tracking-wider">Accuracy moyenne</p>
+              <h3 className="text-lg font-bold mt-0.5">97,4%</h3>
+            </div>
+          </div>
+
+          {/* MIDDLE SECTION */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+
+            {/* ÉVOLUTION DES PRÉDICTIONS */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 lg:col-span-2 flex flex-col justify-between">
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="font-bold text-xs uppercase tracking-wider text-gray-400">Évolution des prédictions</h3>
+                <button className="text-[10px] border border-gray-100 px-2 py-0.5 rounded bg-white"><ChevronDown size={10} /></button>
+              </div>
+              <div className="h-28 w-full flex items-end relative">
+                <svg className="w-full h-full stroke-emerald-600 fill-emerald-50/10" viewBox="0 0 100 30" preserveAspectRatio="none">
+                  <path d="M0,25 Q15,15 25,22 T50,12 T75,18 T100,5 L100,30 L0,30 Z" strokeWidth="0.5" />
+                  <path d="M0,25 Q15,15 25,22 T50,12 T75,18 T100,5" strokeWidth="1" fill="none" />
                 </svg>
               </div>
-
-              <div style={{ backgroundColor: colors.surfaceContainer }} className="rounded-xl p-3 flex flex-col items-center">
-                <span style={{ color: colors.onSurface }} className="text-sm font-medium self-start">Sécurité</span>
-                <svg viewBox="0 0 100 56" className="w-16 h-9 mt-1">
-                  <path d="M10,50 A40,40 0 0 1 90,50" fill="none" stroke={colors.surfaceContainerHighest} strokeWidth="8" strokeLinecap="round" />
-                  <path d="M10,50 A40,40 0 0 1 70,16" fill="none" stroke={colors.accent} strokeWidth="8" strokeLinecap="round" />
-                </svg>
-                <span style={{ color: colors.onSurface }} className="text-sm font-medium mt-0.5">64%</span>
-              </div>
-
-              <div style={{ backgroundColor: colors.surfaceContainer }} className="rounded-xl p-3 flex flex-col items-center text-center">
-                <div style={{ backgroundColor: colors.primaryDark }} className="h-7.5 w-7.5 rounded-full flex items-center justify-center text-white text-xs font-medium">K</div>
-                <span style={{ color: colors.onSurface }} className="text-xs font-medium mt-1.5">Koffi Mensah</span>
-                <div className="grid grid-cols-2 gap-2 mt-1.5 text-[9px] w-full" style={{ color: colors.onSurfaceVariant }}>
-                  <div>Datasets<div style={{ color: colors.onSurface }} className="text-xs font-medium">4</div></div>
-                  <div>Alertes<div style={{ color: colors.onSurface }} className="text-xs font-medium">2</div></div>
-                </div>
-              </div>
             </div>
 
-            {/* Row 3 */}
-            <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
-              <div style={{ backgroundColor: colors.surfaceContainer }} className="rounded-xl p-3">
-                <span style={{ color: colors.onSurface }} className="text-sm font-medium">Alertes</span>
-                <div className="flex flex-col gap-1.5 mt-1.5">
-                  {alerts.map((a, i) => (
-                      <div key={i} className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <div style={{ backgroundColor: a.positive ? colors.accent : colors.error }} className="w-0.5 h-4" />
-                          <span style={{ color: colors.onSurface }} className="text-[10px]">{a.label}</span>
-                        </div>
-                        <span style={{
-                          backgroundColor: a.positive ? colors.primaryFixed : colors.errorContainer,
-                          color: a.positive ? colors.primary : colors.error
-                        }} className="text-[9px] rounded-full px-1.5 py-0.5">{a.trend}</span>
+            {/* LA CARD WHATSAPP METAMORPHOSÉE EN VERTE */}
+            <div className="bg-[#e8f5e9] p-5 rounded-xl border border-[#c8e6c9] flex flex-col justify-between items-center text-center shadow-sm">
+              <div className="flex flex-col items-center mt-2">
+                <div className="w-12 h-12 bg-white text-[#25D366] rounded-full flex items-center justify-center mb-3 shadow-sm">
+                  <MessageCircle size={24} fill="currentColor" />
+                </div>
+                <h3 className="font-bold text-sm tracking-wide text-[#1b5e20]">Alertes WhatsApp</h3>
+                <p className="text-[11px] text-[#2e7d32] mt-1.5 max-w-[210px] leading-relaxed font-medium">
+                  Connectez votre compte pour recevoir vos notifications et rapports d'analyses directement sur votre messagerie.
+                </p>
+              </div>
+
+              <button className="w-full bg-[#25D366] hover:bg-[#20ba56] text-white font-bold text-xs py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] mt-4">
+                Connecter WhatsApp
+              </button>
+            </div>
+
+          </div>
+
+          {/* CARDS DU BAS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            {/* CARTE 1: FICHIERS RÉCENTS TOTALEMENT NETTOYÉE */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col h-[250px]">
+              <div className="flex justify-between items-center mb-3 shrink-0">
+                <h3 className="font-bold text-[11px] uppercase tracking-wide text-gray-400">Fichiers récents</h3>
+                <a href="#" className="text-[10px] text-gray-400 hover:underline">Voir tout</a>
+              </div>
+              <div className="flex-1 overflow-y-auto pr-0.5 space-y-1 scrollbar-thin">
+                {recentFiles.map((file, i) => (
+                    <div key={i} className="flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0 hover:bg-gray-50/60 px-2 rounded transition-colors">
+                      <div className="min-w-0">
+                        <h4 className="text-[11px] font-semibold text-gray-800 truncate max-w-[170px]">{file.name}</h4>
+                        <p className="text-[9px] text-gray-400 mt-0.5">{file.size}</p>
                       </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ backgroundColor: colors.surfaceContainer }} className="rounded-xl p-3 flex flex-col items-center justify-center text-center">
-                <MessageCircle className="h-4.5 w-4.5" style={{ color: colors.primary }} />
-                <span style={{ color: colors.onSurface }} className="text-xs font-medium mt-1">Discutez avec vos données</span>
-                <button style={{ backgroundColor: colors.primary }} className="mt-1.5 text-white text-[11px] rounded-lg px-4 py-1.5">
-                  Poser une question
-                </button>
+                      <button className="text-gray-400 hover:text-gray-600"><MoreVertical size={14} /></button>
+                    </div>
+                ))}
               </div>
             </div>
-          </main>
-        </div>
+
+            {/* CARTE 2: ACTIVITÉ RÉCENTE */}
+            <div className="bg-white p-3.5 rounded-xl border border-gray-100 h-[250px] flex flex-col">
+              <h3 className="font-bold text-[11px] uppercase tracking-wide text-gray-400 mb-2 shrink-0">Activité récente</h3>
+              <div className="flex-1 overflow-y-auto space-y-2.5 relative before:absolute before:left-2.5 before:top-1 before:bottom-1 before:w-[1px] before:bg-gray-100 pr-0.5">
+                {recentActivity.map((act, i) => {
+                  const IconComp = act.icon;
+                  return (
+                      <div key={i} className="flex gap-2 relative items-start text-[10px]">
+                        <div className={`p-1 rounded-full z-10 shrink-0 ${act.color}`}>
+                          <IconComp size={10} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-700 truncate">{act.text}</h4>
+                          <p className="text-[9px] text-gray-400 truncate">{act.sub}</p>
+                        </div>
+                        <span className="text-[8px] text-gray-400 shrink-0">{act.time}</span>
+                      </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* CARTE 3: QUALITÉ DES DONNÉES */}
+            <div className="bg-white p-3.5 rounded-xl border border-gray-100 h-[250px] flex flex-col justify-between items-center">
+              <h3 className="font-bold text-[11px] uppercase tracking-wide text-gray-400 w-full text-left">Qualité des données</h3>
+              <div className="relative w-20 h-20 flex items-center justify-center my-1">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  <path className="text-gray-100" strokeWidth="3.5" stroke="currentColor" fill="transparent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path className="text-emerald-500" strokeWidth="3.5" strokeDasharray="92, 100" strokeLinecap="round" stroke="currentColor" fill="transparent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <div className="absolute text-center">
+                  <span className="text-base font-bold block leading-none">92%</span>
+                  <span className="text-[8px] text-gray-400 mt-0.5 block">Très bonne</span>
+                </div>
+              </div>
+              <div className="flex gap-3 text-[9px] text-gray-400 font-medium border-t border-gray-50 pt-2 w-full justify-center">
+                <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Complètes</div>
+                <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Manquantes</div>
+              </div>
+            </div>
+
+            {/* CARTE 4: PROFIL */}
+            <div className="bg-white p-3.5 rounded-xl border border-gray-100 h-[250px] flex flex-col items-center text-center justify-between">
+              <div className="flex flex-col items-center w-full mt-1">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Marina" alt="Avatar" className="w-12 h-12 bg-amber-100 rounded-full border p-0.5 mb-1.5" />
+                <h3 className="font-bold text-xs">Marina K.</h3>
+                <p className="text-[10px] text-gray-400">marina@gmail.com</p>
+                <span className="mt-1.5 text-[8px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                Premium
+              </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1 w-full border-t border-gray-100 pt-2.5 text-center">
+                <div><span className="text-[9px] text-gray-400 block">Projets</span><span className="font-bold text-xs">12</span></div>
+                <div><span className="text-[9px] text-gray-400 block">Analyses</span><span className="font-bold text-xs">173</span></div>
+                <div><span className="text-[9px] text-gray-400 block">Preds</span><span className="font-bold text-xs">820</span></div>
+              </div>
+            </div>
+
+          </div>
+
+        </main>
       </div>
-  )
+  );
 }

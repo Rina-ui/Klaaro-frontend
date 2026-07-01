@@ -5,6 +5,7 @@ import Step2Entreprise from "../pages/onboarding/Step2Entreprise.tsx";
 import Step3BasicInfo from "../pages/onboarding/Step3BasicInfo.tsx";
 import Step4Welcome from "../pages/onboarding/Step4Welcome.tsx";
 import DashboardPage from "../pages/dashboard/DashboardPage.tsx";
+import UploadPage from "../pages/Upload/UploadPage.tsx";
 
 
 export default function AppRouter() {
@@ -19,6 +20,7 @@ export default function AppRouter() {
                 <Route path="/onboarding/step4" element={<Step4Welcome />} />
     {/*<Route path="/login" element={<LoginPage />} />*/}
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/upload" element={<UploadPage />} />
     </Routes>
     </BrowserRouter>
 )
