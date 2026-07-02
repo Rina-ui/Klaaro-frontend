@@ -91,7 +91,7 @@ export default function LoginPage(): React.JSX.Element {
                 </button>
             </form>
 
-            {/* BAS DE PAGE (REDIRECTION INSCRIPTION) */}
+            {/* BAS DE PAGE */}
             <div className="mt-8 pt-6 border-t border-gray-200/40 text-center">
                 <p className="text-xs text-gray-500 font-semibold">
                     {noAccount}{' '}

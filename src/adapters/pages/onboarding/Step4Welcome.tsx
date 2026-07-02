@@ -14,22 +14,9 @@ export default function Step4Welcome() {
             {/* Conteneur principal surélevé en z-10 */}
             <div className="flex flex-col items-center max-w-md relative z-10">
 
-                <div className="relative flex items-center justify-center mb-10">
-                    <div className="w-40 h-40 rounded-[40px] bg-white/30 backdrop-blur-md border border-white/40 flex items-center justify-center shadow-lg transition-transform hover:scale-105 duration-500">
-                        <div className="w-24 h-24 rounded-3xl bg-[#1e5138] flex items-center justify-center shadow-md shadow-[#1e5138]/20 animate-pulse">
-                            <span
-                                style={{ fontVariationSettings: "'FILL' 1, 'wght' 700" }}
-                                className="material-symbols-outlined text-white text-5xl"
-                            >
-                                check_circle
-                             </span>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Titre & Textes de bienvenue */}
                 <h1 className="text-4xl font-black tracking-tight text-center text-gray-900 leading-tight mb-4">
-                    Bienvenue <br />sur Klaaro.
+                    Bienvenue sur Klaaro.
                 </h1>
 
                 <p style={{ color: colors.onSurfaceVariant }} className="text-xs font-semibold text-center max-w-sm leading-relaxed mb-10 px-4">
