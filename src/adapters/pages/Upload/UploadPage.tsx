@@ -1,11 +1,10 @@
 import React from 'react';
-import { Calendar, UploadCloud, Link2, Camera } from 'lucide-react';
-import {useUploadDashboard} from "../../../use_cases/hooks/useUploadDashboard.ts";
+import { UploadCloud, Link2, Camera } from 'lucide-react';
+import { useUploadDashboard } from "../../../use_cases/hooks/useUploadDashboard.ts";
 import UploadStatsSection from "./UploadStatsSection.tsx";
 import UploadActionCard from "./UploadActionCard.tsx";
 import AnalysisProgressCard from "./AnalysisProgressCard.tsx";
-
-
+import NavigationTabs from "../../components/ui/NavigationTabs.tsx";
 
 export default function UploadPage(): React.JSX.Element {
     const {
@@ -21,17 +20,8 @@ export default function UploadPage(): React.JSX.Element {
         <div className="min-h-screen bg-[#e2e4e3] text-[#1a1a1a] font-sans p-4 md:p-8 antialiased flex flex-col items-center">
             <div className="w-full max-w-[1300px] flex flex-col">
 
-                {/* BARRE DE NAVIGATION STYLE GÉLULE */}
-                <div className="flex justify-between items-center mb-10 w-full">
-                    <div className="bg-[#f1f3f2] border border-gray-200/40 px-4 py-2 rounded-2xl text-xs font-semibold text-gray-600 flex items-center gap-2 shadow-sm">
-                        <Calendar size={14} className="text-[#1e5138]" />
-                        <span>Jan 6</span>
-                    </div>
-                    <div className="flex items-center gap-1 bg-[#f1f3f2] border border-gray-200/40 p-1 rounded-full text-xs font-semibold text-gray-400 shadow-sm">
-                        <button className="px-5 py-2 rounded-full text-gray-600 hover:text-gray-900 transition-colors">Dashboard</button>
-                        <button className="bg-[#1e5138] text-white px-5 py-2 rounded-full shadow-sm">Uploads</button>
-                    </div>
-                </div>
+                {/* BARRE DE NAVIGATION PROPRE ET ACTIVE (SANS DOUBLONS) */}
+                <NavigationTabs />
 
                 {/* BLOC DES STATISTIQUES ENCAPSULÉ */}
                 <UploadStatsSection stats={stats} globalVolume={globalVolume} />

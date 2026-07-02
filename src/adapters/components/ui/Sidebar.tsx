@@ -1,6 +1,6 @@
+import { NavLink } from 'react-router-dom';
 import {
-    LayoutDashboard, FileText, BarChart3, Calendar,
-Settings, LogOut, Menu, ChevronLeft
+    LayoutDashboard, FileText, BarChart3, Settings, LogOut, Menu, ChevronLeft
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -9,6 +9,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
+
     return (
         <aside
             onClick={() => isCollapsed && onToggle()}
@@ -27,8 +28,8 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                 </div>
             ) : (
                 <>
-                    <div className="flex flex-col items-center gap-5 w-full">
-                        {/* Bouton flèche pour replier proprement la sidebar */}
+                    {/* SECTION DU HAUT : Redirection au clic sur les icônes */}
+                    <div className="flex flex-col items-center gap-4 w-full">
                         <button
                             onClick={onToggle}
                             className="p-2 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-all border border-gray-100 mb-2 shadow-sm active:scale-95 cursor-pointer"
@@ -36,26 +37,35 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                             <ChevronLeft size={16} />
                         </button>
 
-                        <button className="p-4 bg-[#1a1a1a] text-white rounded-full shadow-md transition-transform active:scale-95 cursor-pointer">
+                        <NavLink
+                            to="/dashboard"
+                            className={({ isActive }) => `p-3 rounded-full transition-colors cursor-pointer ${isActive ? 'bg-[#1a1a1a] text-white shadow-md' : 'text-gray-400 hover:text-black'}`}
+                        >
                             <LayoutDashboard size={20} />
-                        </button>
-                        <button className="p-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors cursor-pointer"><FileText size={20} /></button>
-                        <button className="p-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors cursor-pointer"><BarChart3 size={20} /></button>
-                        <button className="p-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors cursor-pointer"><Calendar size={20} /></button>
+                        </NavLink>
+
+                        <NavLink
+                            to="/upload"
+                            className={({ isActive }) => `p-3 rounded-full transition-colors cursor-pointer ${isActive ? 'bg-[#1a1a1a] text-white shadow-md' : 'text-gray-400 hover:text-black'}`}
+                        >
+                            <FileText size={20} />
+                        </NavLink>
+
+                        <NavLink
+                            to="/prediction"
+                            className={({ isActive }) => `p-3 rounded-full transition-colors cursor-pointer ${isActive ? 'bg-[#1a1a1a] text-white shadow-md' : 'text-gray-400 hover:text-black'}`}
+                        >
+                            <BarChart3 size={20} />
+                        </NavLink>
+
                     </div>
 
-                    {/* SECTION DU BAS : Options + Profil */}
+                    {/* SECTION DU BAS */}
                     <div className="flex flex-col items-center gap-4 w-full">
                         <button className="p-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors cursor-pointer"><Settings size={20} /></button>
                         <button className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors cursor-pointer"><LogOut size={20} /></button>
-
-                        {/* Photo de profil */}
-                        <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm mt-1 cursor-pointer hover:border-gray-400 transition-colors">
-                            <img
-                                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
-                                alt="profile"
-                                className="w-full h-full object-cover"
-                            />
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm mt-1">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="profile" className="w-full h-full object-cover" />
                         </div>
                     </div>
                 </>

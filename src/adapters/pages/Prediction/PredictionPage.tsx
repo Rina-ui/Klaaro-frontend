@@ -1,10 +1,10 @@
 import React from 'react';
 import {usePredictions} from "../../../use_cases/hooks/usePredictions.ts";
-import NavigationTabs from "./NavigationTabs.tsx";
 import MetricGauges from "./MetricGauges.tsx";
 import PredictionChart from "./PredictionChart.tsx";
 import InsightCard from "./InsightCard.tsx";
 import SummaryCards from "./SummaryCards.tsx";
+import NavigationTabs from "../../components/ui/NavigationTabs.tsx";
 
 
 export default function PredictionsPage(): React.JSX.Element {
