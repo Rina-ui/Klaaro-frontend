@@ -1,6 +1,6 @@
 import {
     LayoutDashboard, FileText, BarChart3, Calendar,
-    Users, FolderHeart, Settings, LogOut, Menu, ChevronLeft
+Settings, LogOut, Menu, ChevronLeft
 } from 'lucide-react'
 
 interface SidebarProps {
