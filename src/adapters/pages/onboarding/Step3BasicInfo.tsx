@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOnboarding } from '../../../use_cases/hooks/useOnboarding'
-import {colors} from "../../../styles/token.ts";
+import { colors } from "../../../styles/token.ts";
 
 export default function Step3BasicInfo() {
     const navigate = useNavigate()
@@ -29,7 +29,7 @@ export default function Step3BasicInfo() {
         return 3
     }
 
-    const strengthColors = ['transparent', colors.error, colors.warning, colors.accent]
+    const strengthColors = ['transparent', '#e63946', '#ffb703', '#1e5138']
     const strengthLabels = ['', 'Faible', 'Moyen', 'Fort']
     const strength = getPasswordStrength()
 
@@ -47,168 +47,182 @@ export default function Step3BasicInfo() {
     }
 
     return (
-        <div style={{ backgroundColor: colors.background }} className="min-h-screen flex flex-col overflow-x-hidden">
+        <div className="min-h-screen flex flex-col overflow-x-hidden relative select-none bg-[#e2e4e3]">
+            {/*background*/}
+            <div className="absolute top-[-20%] left-[-15%] w-[900px] h-[750px] bg-[#1e5138]/15 rounded-[240px] rotate-[-15deg] pointer-events-none z-0 mix-blend-multiply" />
+            <div className="absolute bottom-[-10%] right-[-12%] w-[800px] h-[600px] bg-[#1e5138]/20 rounded-[180px] rotate-[10deg] pointer-events-none z-0 mix-blend-multiply" />
+
             {/* Header */}
-            <header className="w-full flex items-center justify-between px-10 py-6 max-w-[1280px] mx-auto">
-                <span style={{ color: colors.primary }} className="text-2xl font-bold">Klaaro</span>
-                <button style={{ color: colors.onSurfaceVariant }} className="hover:opacity-80 transition-opacity flex items-center gap-1 text-lg font-semibold">
-                    <span className="material-symbols-outlined">close</span>
+            <header className="w-full flex items-center justify-between px-10 py-6 max-w-[1280px] mx-auto relative z-10">
+                <span className="text-xl font-black tracking-tight text-[#1e5138]">Klaaro.</span>
+                <button
+                    onClick={() => navigate('/welcome')}
+                    style={{ color: colors.onSurfaceVariant }}
+                    className="hover:text-black transition-colors flex items-center gap-1 text-sm font-bold"
+                >
+                    <span className="material-symbols-outlined text-base">close</span>
                     <span className="hidden md:inline">Quitter</span>
                 </button>
             </header>
 
             {/* Progress Bar */}
-            <div className="w-full max-w-xl mx-auto px-10 mt-3">
-                <div style={{ backgroundColor: colors.surfaceContainerHighest }} className="h-2 w-full rounded-full overflow-hidden">
-                    <div style={{ width: '75%', backgroundColor: colors.primary }} className="h-full rounded-full transition-all duration-500" />
+            <div className="w-full max-w-xl mx-auto px-10 mt-3 relative z-10">
+                <div className="h-1.5 w-full bg-white/50 backdrop-blur-sm rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-500 bg-[#1e5138]" style={{ width: '75%' }} />
                 </div>
-                <div className="flex justify-between mt-1">
-                    <span style={{ color: colors.primary }} className="text-xs font-bold">Étape 3 sur 4</span>
-                    <span style={{ color: colors.onSurfaceVariant }} className="text-xs">Vos informations</span>
+                <div className="flex justify-between mt-2">
+                    <span className="text-[10px] font-black text-[#1e5138] uppercase tracking-wider">Étape 3 sur 4</span>
+                    <span style={{ color: colors.onSurfaceVariant }} className="text-[10px] font-bold uppercase tracking-wider">Vos informations</span>
                 </div>
             </div>
 
             {/* Main Content */}
-            <main className="flex-grow flex items-center justify-center p-10">
-                <section className="w-full max-w-md flex flex-col gap-8">
+            <main className="flex-grow flex items-center justify-center p-6 md:p-10 relative z-10">
+                <section className="w-full max-w-md flex flex-col gap-6">
                     <div>
-                        <h1 style={{ color: colors.onSurface }} className="text-3xl font-bold mb-2">
+                        <h1 className="text-3xl font-black tracking-tight text-gray-900 leading-tight mb-1">
                             Presque terminé !
                         </h1>
-                        <p style={{ color: colors.onSurfaceVariant }} className="text-base">
+                        <p className="text-xs font-semibold text-gray-500">
                             Créez votre compte pour accéder à Klaaro.
                         </p>
                     </div>
 
                     <div className="flex flex-col gap-4">
-                        {/* Nom et Prénom */}
+
+                        {/* Prénom & Nom */}
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="flex flex-col gap-1">
-                                <label style={{ color: colors.onSurfaceVariant }} className="text-sm font-medium">Prénom</label>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Prénom</label>
                                 <input
                                     name="firstname"
                                     value={form.firstname}
                                     onChange={handleChange}
                                     placeholder="Koffi"
-                                    style={{ borderColor: colors.outlineVariant, backgroundColor: colors.surface, color: colors.onSurface }}
-                                    className="px-4 py-3 rounded-lg border-2 text-base outline-none focus:border-[#2D6A4F] transition-colors"
+                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
                                 />
                             </div>
-                            <div className="flex flex-col gap-1">
-                                <label style={{ color: colors.onSurfaceVariant }} className="text-sm font-medium">Nom</label>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Nom</label>
                                 <input
                                     name="lastname"
                                     value={form.lastname}
                                     onChange={handleChange}
                                     placeholder="Mensah"
-                                    style={{ borderColor: colors.outlineVariant, backgroundColor: colors.surface, color: colors.onSurface }}
-                                    className="px-4 py-3 rounded-lg border-2 text-base outline-none focus:border-[#2D6A4F] transition-colors"
+                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
                                 />
                             </div>
                         </div>
 
                         {/* Email */}
-                        <div className="flex flex-col gap-1">
-                            <label style={{ color: colors.onSurfaceVariant }} className="text-sm font-medium">Email</label>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Email</label>
                             <input
                                 name="email"
                                 type="email"
                                 value={form.email}
                                 onChange={handleChange}
                                 placeholder="koffi@example.com"
-                                style={{ borderColor: colors.outlineVariant, backgroundColor: colors.surface, color: colors.onSurface }}
-                                className="px-4 py-3 rounded-lg border-2 text-base outline-none focus:border-[#2D6A4F] transition-colors"
+                                className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
                             />
                         </div>
 
                         {/* Téléphone */}
-                        <div className="flex flex-col gap-1">
-                            <label style={{ color: colors.onSurfaceVariant }} className="text-sm font-medium">Téléphone (optionnel)</label>
-                            <div style={{ borderColor: colors.outlineVariant, backgroundColor: colors.surface }} className="flex items-center rounded-lg border-2 focus-within:border-[#2D6A4F] transition-colors">
-                                <span style={{ color: colors.onSurfaceVariant }} className="px-3 text-sm font-medium border-r border-[#B7CFBF]">🇹🇬 +228</span>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Téléphone <span className="text-[10px] text-gray-400 lowercase">(optionnel)</span></label>
+                            <div className="flex items-center rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md overflow-hidden focus-within:bg-white focus-within:border-[#1e5138] transition-all">
+                                <span className="px-4 py-3 text-xs font-black text-gray-600 bg-white/30 border-r border-white/60">🇹🇬 +228</span>
                                 <input
                                     name="phone"
                                     value={form.phone}
                                     onChange={handleChange}
                                     placeholder="90 00 00 00"
-                                    style={{ color: colors.onSurface }}
-                                    className="flex-grow px-4 py-3 text-base outline-none bg-transparent"
+                                    className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
                                 />
                             </div>
                         </div>
 
                         {/* Mot de passe */}
-                        <div className="flex flex-col gap-1">
-                            <label style={{ color: colors.onSurfaceVariant }} className="text-sm font-medium">Mot de passe</label>
-                            <div style={{ borderColor: colors.outlineVariant, backgroundColor: colors.surface }} className="flex items-center rounded-lg border-2 focus-within:border-[#2D6A4F] transition-colors">
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Mot de passe</label>
+                            <div className="flex items-center rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md overflow-hidden focus-within:bg-white focus-within:border-[#1e5138] transition-all">
                                 <input
                                     name="password"
                                     type={showPassword ? 'text' : 'password'}
                                     value={form.password}
                                     onChange={handleChange}
                                     placeholder="••••••••"
-                                    style={{ color: colors.onSurface }}
-                                    className="flex-grow px-4 py-3 text-base outline-none bg-transparent"
+                                    className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
                                 />
-                                <button onClick={() => setShowPassword(!showPassword)} style={{ color: colors.onSurfaceVariant }} className="px-3">
-                                    <span className="material-symbols-outlined text-xl">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="px-3 text-gray-400 hover:text-black">
+                                    <span className="material-symbols-outlined text-base">{showPassword ? 'visibility_off' : 'visibility'}</span>
                                 </button>
                             </div>
+
                             {/* Indicateur de force */}
                             {form.password.length > 0 && (
-                                <div className="flex gap-1 mt-1">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} style={{ backgroundColor: i <= strength ? strengthColors[strength] : colors.surfaceContainerHighest }} className="h-1 flex-1 rounded-full transition-all" />
-                                    ))}
-                                    <span style={{ color: strengthColors[strength] }} className="text-xs font-medium ml-2">{strengthLabels[strength]}</span>
+                                <div className="flex flex-col gap-1 mt-1 px-1">
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300"
+                                                 style={{ backgroundColor: i <= strength ? strengthColors[strength] : 'rgba(0,0,0,0.06)' }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-wide mt-0.5" style={{ color: strengthColors[strength] }}>
+                                        Force : {strengthLabels[strength]}
+                                    </span>
                                 </div>
                             )}
                         </div>
 
                         {/* Confirmer mot de passe */}
-                        <div className="flex flex-col gap-1">
-                            <label style={{ color: colors.onSurfaceVariant }} className="text-sm font-medium">Confirmer le mot de passe</label>
-                            <div style={{ borderColor: form.confirmPassword && form.password !== form.confirmPassword ? colors.error : colors.outlineVariant, backgroundColor: colors.surface }} className="flex items-center rounded-lg border-2 focus-within:border-[#2D6A4F] transition-colors">
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Confirmer le mot de passe</label>
+                            <div className={`flex items-center rounded-2xl border bg-white/50 backdrop-blur-md overflow-hidden focus-within:bg-white focus-within:border-[#1e5138] transition-all
+                                ${form.confirmPassword && form.password !== form.confirmPassword ? 'border-[#e63946]' : 'border-white/40'}
+                            `}>
                                 <input
                                     name="confirmPassword"
                                     type={showConfirm ? 'text' : 'password'}
                                     value={form.confirmPassword}
                                     onChange={handleChange}
                                     placeholder="••••••••"
-                                    style={{ color: colors.onSurface }}
-                                    className="flex-grow px-4 py-3 text-base outline-none bg-transparent"
+                                    className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
                                 />
-                                <button onClick={() => setShowConfirm(!showConfirm)} style={{ color: colors.onSurfaceVariant }} className="px-3">
-                                    <span className="material-symbols-outlined text-xl">{showConfirm ? 'visibility_off' : 'visibility'}</span>
+                                <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="px-3 text-gray-400 hover:text-black">
+                                    <span className="material-symbols-outlined text-base">{showConfirm ? 'visibility_off' : 'visibility'}</span>
                                 </button>
                             </div>
                             {form.confirmPassword && form.password !== form.confirmPassword && (
-                                <span style={{ color: colors.error }} className="text-xs">Les mots de passe ne correspondent pas</span>
+                                <span className="text-[10px] font-bold text-[#e63946] pl-1">Les mots de passe ne correspondent pas</span>
                             )}
                         </div>
                     </div>
 
                     {/* Navigation */}
-                    <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center justify-between pt-4 mt-2">
                         <button
+                            type="button"
                             onClick={() => navigate(-1)}
-                            style={{ color: colors.onSurfaceVariant }}
-                            className="flex items-center gap-1 font-semibold hover:opacity-80 transition-opacity"
+                            className="flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-black transition-colors"
                         >
-                            <span className="material-symbols-outlined">arrow_back</span>
+                            <span className="material-symbols-outlined text-sm">arrow_back</span>
                             Précédent
                         </button>
                         <button
+                            type="button"
                             onClick={handleContinue}
                             disabled={!isValid}
-                            style={{
-                                backgroundColor: isValid ? colors.primary : colors.surfaceContainerHigh,
-                                color: isValid ? colors.onPrimary : colors.onSurfaceVariant
-                            }}
-                            className="font-semibold px-16 py-3 rounded-lg transition-all active:scale-95 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
+                            className={`font-bold px-10 py-3.5 rounded-2xl transition-all active:scale-95 disabled:cursor-not-allowed shadow-sm flex items-center gap-1.5 text-xs
+                                ${isValid
+                                ? 'bg-[#1e5138] text-white hover:bg-[#153a28]'
+                                : 'bg-gray-200/60 text-gray-400'
+                            }
+                            `}
                         >
                             Créer mon compte
-                            <span className="material-symbols-outlined">arrow_forward</span>
+                            <span className="material-symbols-outlined text-sm">arrow_forward</span>
                         </button>
                     </div>
                 </section>

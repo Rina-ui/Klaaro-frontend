@@ -1,58 +1,49 @@
 import { useNavigate } from 'react-router-dom'
-import {colors} from "../../../styles/token.ts";
+import { colors } from "../../../styles/token.ts";
 
 export default function Step4Welcome() {
     const navigate = useNavigate()
 
     return (
-        <div style={{ backgroundColor: colors.background }} className="min-h-screen flex flex-col items-center justify-center p-10">
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 md:p-10 relative overflow-hidden select-none bg-[#e2e4e3]">
 
-            {/* Animation cercle */}
-            <div className="relative flex items-center justify-center mb-8">
-                <div style={{ backgroundColor: colors.primaryFixed }} className="w-32 h-32 rounded-full flex items-center justify-center animate-pulse">
-                    <span style={{ color: colors.primary, fontVariationSettings: "'FILL' 1" }} className="material-symbols-outlined text-6xl">
-                        check_circle
-                    </span>
+            {/*background*/}
+            <div className="absolute top-[-25%] left-[-20%] w-[1000px] h-[800px] bg-[#1e5138]/15 rounded-[300px] rotate-[-20deg] pointer-events-none z-0 mix-blend-multiply" />
+            <div className="absolute bottom-[-20%] right-[-15%] w-[900px] h-[750px] bg-[#1e5138]/20 rounded-[220px] rotate-[25deg] pointer-events-none z-0 mix-blend-multiply" />
+
+            {/* Conteneur principal surélevé en z-10 */}
+            <div className="flex flex-col items-center max-w-md relative z-10">
+
+                <div className="relative flex items-center justify-center mb-10">
+                    <div className="w-40 h-40 rounded-[40px] bg-white/30 backdrop-blur-md border border-white/40 flex items-center justify-center shadow-lg transition-transform hover:scale-105 duration-500">
+                        <div className="w-24 h-24 rounded-3xl bg-[#1e5138] flex items-center justify-center shadow-md shadow-[#1e5138]/20 animate-pulse">
+                            <span
+                                style={{ fontVariationSettings: "'FILL' 1, 'wght' 700" }}
+                                className="material-symbols-outlined text-white text-5xl"
+                            >
+                                check_circle
+                             </span>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            {/* Texte */}
-            <h1 style={{ color: colors.onSurface }} className="text-4xl font-bold text-center mb-4">
-                Bienvenue sur Klaaro !
-            </h1>
-            <p style={{ color: colors.onSurfaceVariant }} className="text-lg text-center max-w-md mb-10">
-                Votre business vous parle enfin. Commencez par connecter vos premières données.
-            </p>
+                {/* Titre & Textes de bienvenue */}
+                <h1 className="text-4xl font-black tracking-tight text-center text-gray-900 leading-tight mb-4">
+                    Bienvenue <br />sur Klaaro.
+                </h1>
 
-            {/* CTA */}
-            <button
-                onClick={() => navigate('/dashboard')}
-                style={{ backgroundColor: colors.primary, color: colors.onPrimary }}
-                className="font-semibold px-12 py-4 rounded-xl text-lg transition-all active:scale-95 shadow-md flex items-center gap-3 hover:opacity-90"
-            >
-                <span className="material-symbols-outlined">upload_file</span>
-                Connecter mes premières données
-            </button>
+                <p style={{ color: colors.onSurfaceVariant }} className="text-xs font-semibold text-center max-w-sm leading-relaxed mb-10 px-4">
+                    Votre business vous parle enfin. Commencez par connecter vos premières données pour donner vie à vos tableaux de bord.
+                </p>
 
-            {/* Confettis décoratifs */}
-            <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-                {[...Array(8)].map((_, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            backgroundColor: i % 2 === 0 ? colors.primary : colors.accent,
-                            left: `${10 + i * 12}%`,
-                            // eslint-disable-next-line react-hooks/purity
-                            top: `${Math.random() * 30}%`,
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '2px',
-                            opacity: 0.3,
-                            transform: `rotate(${i * 45}deg)`
-                        }}
-                        className="absolute animate-bounce"
-                    />
-                ))}
+                {/* Bouton d'Action Principal (Pilule signature) */}
+                <button
+                    onClick={() => navigate('/dashboard')}
+                    className="w-full md:w-auto font-bold px-10 py-4 rounded-2xl text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 bg-[#1e5138] text-white hover:bg-[#153a28] shadow-[#1e5138]/20"
+                >
+                    <span className="material-symbols-outlined text-base">upload_file</span>
+                    Connecter mes premières données
+                </button>
             </div>
         </div>
     )
