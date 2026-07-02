@@ -12,7 +12,7 @@ export default function MetricGauges({ metrics }: MetricGaugesProps): React.JSX.
             {/* GÉLULES DE PROGRESSION */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:col-span-6">
                 <div className="cursor-pointer group">
-                    <span className="text-[11px] font-bold text-gray-500 block mb-1.5 flex items-center gap-1 group-hover:text-gray-900 transition-colors">
+                    <span className="text-[11px] font-bold text-black block mb-1.5 flex items-center gap-1 group-hover:text-gray-900 transition-colors">
                         <BarChart3 size={12} className="text-[#1e5138]" /> Overview
                     </span>
                     <div className="w-full bg-[#d8dbd8] h-7 rounded-full overflow-hidden p-0.5 shadow-inner transition-all group-hover:ring-1 group-hover:ring-[#1e5138]/20">
@@ -24,7 +24,7 @@ export default function MetricGauges({ metrics }: MetricGaugesProps): React.JSX.
                 </div>
 
                 <div className="cursor-pointer group">
-                    <span className="text-[11px] font-bold text-gray-400 block mb-1.5 flex items-center gap-1 group-hover:text-gray-900 transition-colors">
+                    <span className="text-[11px] font-bold text-black block mb-1.5 flex items-center gap-1 group-hover:text-gray-900 transition-colors">
                         <TrendingUp size={12} /> Croissance
                     </span>
                     <div className="w-full bg-[#d8dbd8] h-7 rounded-full overflow-hidden p-0.5 shadow-inner">

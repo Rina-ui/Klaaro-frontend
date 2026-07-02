@@ -27,7 +27,7 @@ export default function NavigationTabs(): React.JSX.Element {
                     Uploads
                 </NavLink>
                 <NavLink to="/prediction" className={getLinkStyle}>
-                    Predictions
+                    Previsions
                 </NavLink>
             </div>
         </div>

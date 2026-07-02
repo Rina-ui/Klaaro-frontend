@@ -15,7 +15,7 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             onClick={() => isCollapsed && onToggle()}
             className={`
                 fixed top-6 left-6 z-50 flex flex-col justify-between items-center bg-white border border-gray-100 shadow-sm
-                transition-all duration-500 ease-in-out select-none
+                transition-all duration-500 ease-in-out select-none overflow-hidden
                 ${isCollapsed
                 ? 'w-16 h-16 rounded-full py-0 justify-center hover:bg-gray-50 cursor-pointer'
                 : 'w-20 h-[calc(100vh-48px)] rounded-[40px] py-6 cursor-default'
@@ -29,7 +29,7 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             ) : (
                 <>
                     {/* SECTION DU HAUT : Redirection au clic sur les icônes */}
-                    <div className="flex flex-col items-center gap-4 w-full">
+                    <div className="flex flex-col items-center gap-4 w-full relative z-10">
                         <button
                             onClick={onToggle}
                             className="p-2 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-all border border-gray-100 mb-2 shadow-sm active:scale-95 cursor-pointer"
@@ -60,11 +60,17 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
 
                     </div>
 
-                    {/* SECTION DU BAS */}
-                    <div className="flex flex-col items-center gap-4 w-full">
-                        <button className="p-3 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors cursor-pointer"><Settings size={20} /></button>
-                        <button className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors cursor-pointer"><LogOut size={20} /></button>
-                        <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm mt-1">
+                    <div className="flex flex-col items-center gap-4 w-full mt-auto pt-8 relative">
+
+                        <div className="absolute bottom-[-20px] left-[-30px] w-40 h-48 bg-[#1e5138]/25 rounded-[50px] rotate-[12deg] pointer-events-none z-0 mix-blend-multiply" />
+
+                        <button className="relative z-10 p-3 text-gray-400 hover:text-black hover:bg-gray-50/80 backdrop-blur-sm rounded-full transition-colors cursor-pointer">
+                            <Settings size={20} />
+                        </button>
+                        <button className="relative z-10 p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors cursor-pointer">
+                            <LogOut size={20} />
+                        </button>
+                        <div className="relative z-10 w-10 h-10 rounded-full overflow-hidden border border-white shadow-sm mt-1">
                             <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="profile" className="w-full h-full object-cover" />
                         </div>
                     </div>
