@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOnboarding } from '../../../use_cases/hooks/useOnboarding'
 import { colors } from "../../../styles/token.ts";
+import PageAnimation from "../../components/ui/PageAnimation.tsx";
 
 export default function Step3BasicInfo() {
     const navigate = useNavigate()
@@ -47,186 +48,189 @@ export default function Step3BasicInfo() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col overflow-x-hidden relative select-none bg-[#e2e4e3]">
-            {/*background*/}
-            <div className="absolute top-[-20%] left-[-15%] w-[900px] h-[750px] bg-[#1e5138]/15 rounded-[240px] rotate-[-15deg] pointer-events-none z-0 mix-blend-multiply" />
-            <div className="absolute bottom-[-10%] right-[-12%] w-[800px] h-[600px] bg-[#1e5138]/20 rounded-[180px] rotate-[10deg] pointer-events-none z-0 mix-blend-multiply" />
+        <PageAnimation>
+            <div className="min-h-screen flex flex-col overflow-x-hidden relative select-none bg-[#e2e4e3]">
+                {/*background*/}
+                <div className="absolute top-[-20%] left-[-15%] w-[900px] h-[750px] bg-[#1e5138]/15 rounded-[240px] rotate-[-15deg] pointer-events-none z-0 mix-blend-multiply" />
+                <div className="absolute bottom-[-10%] right-[-12%] w-[800px] h-[600px] bg-[#1e5138]/20 rounded-[180px] rotate-[10deg] pointer-events-none z-0 mix-blend-multiply" />
 
-            {/* Header */}
-            <header className="w-full flex items-center justify-between px-10 py-6 max-w-[1280px] mx-auto relative z-10">
-                <span className="text-xl font-black tracking-tight text-[#1e5138]">Klaaro.</span>
-                <button
-                    onClick={() => navigate('/welcome')}
-                    style={{ color: colors.onSurfaceVariant }}
-                    className="hover:text-black transition-colors flex items-center gap-1 text-sm font-bold"
-                >
-                    <span className="material-symbols-outlined text-base">close</span>
-                    <span className="hidden md:inline">Quitter</span>
-                </button>
-            </header>
+                {/* Header */}
+                <header className="w-full flex items-center justify-between px-10 py-6 max-w-[1280px] mx-auto relative z-10">
+                    <span className="text-xl font-black tracking-tight text-[#1e5138]">Klaaro.</span>
+                    <button
+                        onClick={() => navigate('/welcome')}
+                        style={{ color: colors.onSurfaceVariant }}
+                        className="hover:text-black transition-colors flex items-center gap-1 text-sm font-bold"
+                    >
+                        <span className="material-symbols-outlined text-base">close</span>
+                        <span className="hidden md:inline">Quitter</span>
+                    </button>
+                </header>
 
-            {/* Progress Bar */}
-            <div className="w-full max-w-xl mx-auto px-10 mt-3 relative z-10">
-                <div className="h-1.5 w-full bg-white/50 backdrop-blur-sm rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-500 bg-[#1e5138]" style={{ width: '75%' }} />
-                </div>
-                <div className="flex justify-between mt-2">
-                    <span className="text-[10px] font-black text-[#1e5138] uppercase tracking-wider">Étape 3 sur 4</span>
-                    <span style={{ color: colors.onSurfaceVariant }} className="text-[10px] font-bold uppercase tracking-wider">Vos informations</span>
-                </div>
-            </div>
-
-            {/* Main Content */}
-            <main className="flex-grow flex items-center justify-center p-6 md:p-10 relative z-10">
-                <section className="w-full max-w-md flex flex-col gap-6">
-                    <div>
-                        <h1 className="text-3xl font-black tracking-tight text-gray-900 leading-tight mb-1">
-                            Presque terminé !
-                        </h1>
-                        <p className="text-xs font-semibold text-gray-500">
-                            Créez votre compte pour accéder à Klaaro.
-                        </p>
+                {/* Progress Bar */}
+                <div className="w-full max-w-xl mx-auto px-10 mt-3 relative z-10">
+                    <div className="h-1.5 w-full bg-white/50 backdrop-blur-sm rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-500 bg-[#1e5138]" style={{ width: '75%' }} />
                     </div>
+                    <div className="flex justify-between mt-2">
+                        <span className="text-[10px] font-black text-[#1e5138] uppercase tracking-wider">Étape 3 sur 4</span>
+                        <span style={{ color: colors.onSurfaceVariant }} className="text-[10px] font-bold uppercase tracking-wider">Vos informations</span>
+                    </div>
+                </div>
 
-                    <div className="flex flex-col gap-4">
+                {/* Main Content */}
+                <main className="flex-grow flex items-center justify-center p-6 md:p-10 relative z-10">
+                    <section className="w-full max-w-md flex flex-col gap-6">
+                        <div>
+                            <h1 className="text-3xl font-black tracking-tight text-gray-900 leading-tight mb-1">
+                                Presque terminé !
+                            </h1>
+                            <p className="text-xs font-semibold text-gray-500">
+                                Créez votre compte pour accéder à Klaaro.
+                            </p>
+                        </div>
 
-                        {/* Prénom & Nom */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-col gap-4">
+
+                            {/* Prénom & Nom */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Prénom</label>
+                                    <input
+                                        name="firstname"
+                                        value={form.firstname}
+                                        onChange={handleChange}
+                                        placeholder="Koffi"
+                                        className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Nom</label>
+                                    <input
+                                        name="lastname"
+                                        value={form.lastname}
+                                        onChange={handleChange}
+                                        placeholder="Mensah"
+                                        className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Email */}
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Prénom</label>
+                                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Email</label>
                                 <input
-                                    name="firstname"
-                                    value={form.firstname}
+                                    name="email"
+                                    type="email"
+                                    value={form.email}
                                     onChange={handleChange}
-                                    placeholder="Koffi"
+                                    placeholder="koffi@example.com"
                                     className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
                                 />
                             </div>
+
+                            {/* Téléphone */}
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Nom</label>
-                                <input
-                                    name="lastname"
-                                    value={form.lastname}
-                                    onChange={handleChange}
-                                    placeholder="Mensah"
-                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Email */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Email</label>
-                            <input
-                                name="email"
-                                type="email"
-                                value={form.email}
-                                onChange={handleChange}
-                                placeholder="koffi@example.com"
-                                className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
-                            />
-                        </div>
-
-                        {/* Téléphone */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Téléphone <span className="text-[10px] text-gray-400 lowercase">(optionnel)</span></label>
-                            <div className="flex items-center rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md overflow-hidden focus-within:bg-white focus-within:border-[#1e5138] transition-all">
-                                <span className="px-4 py-3 text-xs font-black text-gray-600 bg-white/30 border-r border-white/60">🇹🇬 +228</span>
-                                <input
-                                    name="phone"
-                                    value={form.phone}
-                                    onChange={handleChange}
-                                    placeholder="90 00 00 00"
-                                    className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Mot de passe */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Mot de passe</label>
-                            <div className="flex items-center rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md overflow-hidden focus-within:bg-white focus-within:border-[#1e5138] transition-all">
-                                <input
-                                    name="password"
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={form.password}
-                                    onChange={handleChange}
-                                    placeholder="••••••••"
-                                    className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
-                                />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="px-3 text-gray-400 hover:text-black">
-                                    <span className="material-symbols-outlined text-base">{showPassword ? 'visibility_off' : 'visibility'}</span>
-                                </button>
+                                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Téléphone <span className="text-[10px] text-gray-400 lowercase">(optionnel)</span></label>
+                                <div className="flex items-center rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md overflow-hidden focus-within:bg-white focus-within:border-[#1e5138] transition-all">
+                                    <span className="px-4 py-3 text-xs font-black text-gray-600 bg-white/30 border-r border-white/60">🇹🇬 +228</span>
+                                    <input
+                                        name="phone"
+                                        value={form.phone}
+                                        onChange={handleChange}
+                                        placeholder="90 00 00 00"
+                                        className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
+                                    />
+                                </div>
                             </div>
 
-                            {/* Indicateur de force */}
-                            {form.password.length > 0 && (
-                                <div className="flex flex-col gap-1 mt-1 px-1">
-                                    <div className="flex gap-1">
-                                        {[1, 2, 3].map(i => (
-                                            <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300"
-                                                 style={{ backgroundColor: i <= strength ? strengthColors[strength] : 'rgba(0,0,0,0.06)' }}
-                                            />
-                                        ))}
-                                    </div>
-                                    <span className="text-[10px] font-black uppercase tracking-wide mt-0.5" style={{ color: strengthColors[strength] }}>
+                            {/* Mot de passe */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Mot de passe</label>
+                                <div className="flex items-center rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md overflow-hidden focus-within:bg-white focus-within:border-[#1e5138] transition-all">
+                                    <input
+                                        name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={form.password}
+                                        onChange={handleChange}
+                                        placeholder="••••••••"
+                                        className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
+                                    />
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="px-3 text-gray-400 hover:text-black">
+                                        <span className="material-symbols-outlined text-base">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                                    </button>
+                                </div>
+
+                                {/* Indicateur de force */}
+                                {form.password.length > 0 && (
+                                    <div className="flex flex-col gap-1 mt-1 px-1">
+                                        <div className="flex gap-1">
+                                            {[1, 2, 3].map(i => (
+                                                <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300"
+                                                     style={{ backgroundColor: i <= strength ? strengthColors[strength] : 'rgba(0,0,0,0.06)' }}
+                                                />
+                                            ))}
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase tracking-wide mt-0.5" style={{ color: strengthColors[strength] }}>
                                         Force : {strengthLabels[strength]}
                                     </span>
-                                </div>
-                            )}
-                        </div>
+                                    </div>
+                                )}
+                            </div>
 
-                        {/* Confirmer mot de passe */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Confirmer le mot de passe</label>
-                            <div className={`flex items-center rounded-2xl border bg-white/50 backdrop-blur-md overflow-hidden focus-within:bg-white focus-within:border-[#1e5138] transition-all
+                            {/* Confirmer mot de passe */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Confirmer le mot de passe</label>
+                                <div className={`flex items-center rounded-2xl border bg-white/50 backdrop-blur-md overflow-hidden focus-within:bg-white focus-within:border-[#1e5138] transition-all
                                 ${form.confirmPassword && form.password !== form.confirmPassword ? 'border-[#e63946]' : 'border-white/40'}
                             `}>
-                                <input
-                                    name="confirmPassword"
-                                    type={showConfirm ? 'text' : 'password'}
-                                    value={form.confirmPassword}
-                                    onChange={handleChange}
-                                    placeholder="••••••••"
-                                    className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
-                                />
-                                <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="px-3 text-gray-400 hover:text-black">
-                                    <span className="material-symbols-outlined text-base">{showConfirm ? 'visibility_off' : 'visibility'}</span>
-                                </button>
+                                    <input
+                                        name="confirmPassword"
+                                        type={showConfirm ? 'text' : 'password'}
+                                        value={form.confirmPassword}
+                                        onChange={handleChange}
+                                        placeholder="••••••••"
+                                        className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
+                                    />
+                                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="px-3 text-gray-400 hover:text-black">
+                                        <span className="material-symbols-outlined text-base">{showConfirm ? 'visibility_off' : 'visibility'}</span>
+                                    </button>
+                                </div>
+                                {form.confirmPassword && form.password !== form.confirmPassword && (
+                                    <span className="text-[10px] font-bold text-[#e63946] pl-1">Les mots de passe ne correspondent pas</span>
+                                )}
                             </div>
-                            {form.confirmPassword && form.password !== form.confirmPassword && (
-                                <span className="text-[10px] font-bold text-[#e63946] pl-1">Les mots de passe ne correspondent pas</span>
-                            )}
                         </div>
-                    </div>
 
-                    {/* Navigation */}
-                    <div className="flex items-center justify-between pt-4 mt-2">
-                        <button
-                            type="button"
-                            onClick={() => navigate(-1)}
-                            className="flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-black transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-sm">arrow_back</span>
-                            Précédent
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleContinue}
-                            disabled={!isValid}
-                            className={`font-bold px-10 py-3.5 rounded-2xl transition-all active:scale-95 disabled:cursor-not-allowed shadow-sm flex items-center gap-1.5 text-xs
+                        {/* Navigation */}
+                        <div className="flex items-center justify-between pt-4 mt-2">
+                            <button
+                                type="button"
+                                onClick={() => navigate(-1)}
+                                className="flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-black transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-sm">arrow_back</span>
+                                Précédent
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleContinue}
+                                disabled={!isValid}
+                                className={`font-bold px-10 py-3.5 rounded-2xl transition-all active:scale-95 disabled:cursor-not-allowed shadow-sm flex items-center gap-1.5 text-xs
                                 ${isValid
-                                ? 'bg-[#1e5138] text-white hover:bg-[#153a28]'
-                                : 'bg-gray-200/60 text-gray-400'
-                            }
+                                    ? 'bg-[#1e5138] text-white hover:bg-[#153a28]'
+                                    : 'bg-gray-200/60 text-gray-400'
+                                }
                             `}
-                        >
-                            Créer mon compte
-                            <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                        </button>
-                    </div>
-                </section>
-            </main>
-        </div>
+                            >
+                                Créer mon compte
+                                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                            </button>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </PageAnimation>
+
     )
 }

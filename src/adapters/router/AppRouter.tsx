@@ -9,6 +9,7 @@ import UploadPage from "../pages/Upload/UploadPage.tsx";
 import LandingPage from "../pages/landing page/LandingPage.tsx";
 import LoginPage from "../pages/auth/LoginPage.tsx";
 import PredictionsPage from "../pages/Prediction/PredictionPage.tsx";
+import PageAnimation from "../components/ui/PageAnimation.tsx";
 
 export default function AppRouter() {
     return (
@@ -28,9 +29,9 @@ export default function AppRouter() {
                 <Route path="/onboarding/step4" element={<Step4Welcome />} />
 
                 {/* Application Principale */}
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/upload" element={<UploadPage />} />
-                <Route path="/prediction" element={<PredictionsPage />} />
+                <Route path="/dashboard" element={<PageAnimation><DashboardPage /></PageAnimation>} />
+                <Route path="/upload" element={<PageAnimation><UploadPage /></PageAnimation>} />
+                <Route path="/prediction" element={<PageAnimation><PredictionsPage /></PageAnimation>} />
             </Routes>
         </BrowserRouter>
     )
