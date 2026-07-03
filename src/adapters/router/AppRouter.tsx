@@ -10,6 +10,7 @@ import LandingPage from "../pages/landing page/LandingPage.tsx";
 import LoginPage from "../pages/auth/LoginPage.tsx";
 import PredictionsPage from "../pages/Prediction/PredictionPage.tsx";
 import PageAnimation from "../components/ui/PageAnimation.tsx";
+import Step3EnterpriseInfo from "../pages/onboarding/Step3EntrepriseBasicInfo.tsx";
 
 export default function AppRouter() {
     return (
@@ -27,6 +28,7 @@ export default function AppRouter() {
                 <Route path="/onboarding/step2/entreprise" element={<Step2Entreprise />} />
                 <Route path="/onboarding/step3" element={<Step3BasicInfo />} />
                 <Route path="/onboarding/step4" element={<Step4Welcome />} />
+                <Route path="/onboarding/step3.1" element={<Step3EnterpriseInfo />} />
 
                 {/* Application Principale */}
                 <Route path="/dashboard" element={<PageAnimation><DashboardPage /></PageAnimation>} />

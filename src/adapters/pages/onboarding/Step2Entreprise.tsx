@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BusinessSector, CompanySize, HearAboutUs } from '../../../entities/Onboarding'
+import { BusinessSector, CompanySize, HearAboutUs, AccountType } from '../../../entities/Onboarding'
 import { useOnboarding } from '../../../use_cases/hooks/useOnboarding'
 import { colors } from "../../../styles/token.ts";
 import PageAnimation from "../../components/ui/PageAnimation.tsx";
@@ -23,6 +23,16 @@ const sizes = [
     { value: CompanySize.XLARGE, icon: 'corporate_fare', label: '50+ employés' },
 ]
 
+// Mapping pour afficher le texte français des Enums bruts
+const sourceLabels: Record<HearAboutUs, string> = {
+    [HearAboutUs.WORD_OF_MOUTH]: "Bouche à oreille",
+    [HearAboutUs.SOCIAL_MEDIA]: "Réseaux sociaux",
+    [HearAboutUs.GOOGLE]: "Google",
+    [HearAboutUs.FRIEND]: "Recommandé par un ami",
+    [HearAboutUs.WHATSAPP]: "WhatsApp",
+    [HearAboutUs.OTHER]: "Autre"
+}
+
 const sources = [
     HearAboutUs.WORD_OF_MOUTH,
     HearAboutUs.SOCIAL_MEDIA,
@@ -41,11 +51,16 @@ export default function Step2Entreprise() {
 
     function handleContinue() {
         if (!selectedSector || !selectedSize) return
+
+        // On pousse les données formatées et validées vers l'état global de l'onboarding
         updateOnboarding({
+            account_type: AccountType.ENTREPRISE, // On ancre l'aiguillage B2B
             sector: selectedSector,
             company_size: selectedSize,
             hear_about_us: selectedSource ?? undefined
         })
+
+        // L'entreprise passe à la création des accès administrateur (Step 3)
         navigate('/onboarding/step3')
     }
 
@@ -53,10 +68,9 @@ export default function Step2Entreprise() {
 
     return (
         <PageAnimation>
-            // Enveloppe relative et masquage des débordements pour accueillir les vagues artistiques
             <div className="min-h-screen flex flex-col overflow-x-hidden relative select-none bg-[#e2e4e3]">
 
-                {/*background*/}
+                {/* Arrière-plans artistiques */}
                 <div className="absolute top-[-10%] left-[-15%] w-[850px] h-[650px] bg-[#1e5138]/15 rounded-[200px] rotate-[-8deg] pointer-events-none z-0 mix-blend-multiply" />
                 <div className="absolute bottom-[-15%] right-[-10%] w-[800px] h-[600px] bg-[#1e5138]/20 rounded-[140px] rotate-[15deg] pointer-events-none z-0 mix-blend-multiply" />
 
@@ -88,7 +102,7 @@ export default function Step2Entreprise() {
                 <main className="flex-grow flex items-center justify-center p-6 md:p-10 relative z-10">
                     <section className="w-full max-w-2xl flex flex-col gap-10">
 
-                        {/* Question 1 — Secteur */}
+                        {/* Secteur d'activité */}
                         <div className="flex flex-col gap-4">
                             <div className="flex flex-col mb-2">
                                 <h1 className="text-3xl font-black tracking-tight text-gray-900 leading-tight mb-1">
@@ -105,6 +119,7 @@ export default function Step2Entreprise() {
                                     return (
                                         <button
                                             key={s.value}
+                                            type="button"
                                             onClick={() => setSelectedSector(s.value)}
                                             className={`flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 transition-all duration-200 hover:-translate-y-0.5
                                             ${isSelected
@@ -121,9 +136,9 @@ export default function Step2Entreprise() {
                             </div>
                         </div>
 
-                        {/* Question 2 — Taille */}
+                        {/* Taille de l'entreprise */}
                         <div className="flex flex-col gap-4">
-                            <h2 className="text-sm font-black tracking-tight text-gray-900 uppercase tracking-wider mb-1 pl-1">
+                            <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider mb-1 pl-1">
                                 Combien d'employés ?
                             </h2>
                             <div className="grid grid-cols-2 gap-3">
@@ -132,6 +147,7 @@ export default function Step2Entreprise() {
                                     return (
                                         <button
                                             key={s.value}
+                                            type="button"
                                             onClick={() => setSelectedSize(s.value)}
                                             className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left hover:-translate-y-0.5
                                             ${isSelected
@@ -148,9 +164,9 @@ export default function Step2Entreprise() {
                             </div>
                         </div>
 
-                        {/* Question 3 — Source */}
+                        {/* Acquisition d'audience */}
                         <div className="flex flex-col gap-4">
-                            <h2 className="text-sm font-black tracking-tight text-gray-900 uppercase tracking-wider mb-1 pl-1">
+                            <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider mb-1 pl-1">
                                 Comment avez-vous entendu parler de Klaaro ?
                             </h2>
                             <div className="flex flex-wrap gap-2">
@@ -159,6 +175,7 @@ export default function Step2Entreprise() {
                                     return (
                                         <button
                                             key={s}
+                                            type="button"
                                             onClick={() => setSelectedSource(s)}
                                             className={`px-4 py-2.5 rounded-full border-2 text-xs font-bold transition-all duration-200
                                             ${isSelected
@@ -167,16 +184,17 @@ export default function Step2Entreprise() {
                                             }
                                         `}
                                         >
-                                            {s}
+                                            {sourceLabels[s]}
                                         </button>
                                     );
                                 })}
                             </div>
                         </div>
 
-                        {/* Navigation */}
+                        {/* Actions de navigation */}
                         <div className="flex items-center justify-between pt-6 mt-2">
                             <button
+                                type="button"
                                 onClick={() => navigate('/onboarding/step1')}
                                 className="flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-black transition-colors"
                             >
@@ -184,6 +202,7 @@ export default function Step2Entreprise() {
                                 Précédent
                             </button>
                             <button
+                                type="button"
                                 onClick={handleContinue}
                                 disabled={!isValid}
                                 className={`font-bold px-14 py-3.5 rounded-2xl transition-all active:scale-95 disabled:cursor-not-allowed shadow-sm flex items-center gap-1.5 text-xs
@@ -201,6 +220,5 @@ export default function Step2Entreprise() {
                 </main>
             </div>
         </PageAnimation>
-
     )
 }

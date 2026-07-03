@@ -1,60 +1,60 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 export enum AccountType {
-    INDIVIDUAL = "individual",
-    ENTREPRISE = "entreprise"
+    INDIVIDUAL = "INDIVIDUAL",
+    ENTREPRISE = "ENTREPRISE"
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 export enum UserProfile {
-    STUDENT = "Etudiant",
-    DEVELOPER = "Developpeur",
-    DATA_SCIENTIST = "Data Scientist",
-    FREELANCE = "Freelance",
-    ENTREPRENEUR = "Entrepreneur",
-    OTHER = "Autre"
+    STUDENT = "STUDENT",
+    DEVELOPER = "DEVELOPER",
+    DATA_SCIENTIST = "DATA_SCIENTIST",
+    FREELANCE = "FREELANCE",
+    ENTREPRENEUR = "ENTREPRENEUR",
+    OTHER = "OTHER"
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 export enum DataLevel {
-    BEGINNER = "Debutant",
-    INTERMEDIATE = "Intermediaire",
-    ADVANCED = "Avance"
+    BEGINNER = "BEGINNER",
+    INTERMEDIATE = "INTERMEDIATE",
+    ADVANCED = "ADVANCED"
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 export enum BusinessSector {
-    COMMERCE = "Commerce & Distribution",
-    RESTAURANT = "Restauration & Food",
-    TECH = "Technologie",
-    HEALTH = "Sante",
-    EDUCATION = "Education",
-    FINANCE = "Finance",
-    AGRICULTURE = "Agriculture",
-    OTHER = "Autre"
+    COMMERCE = "COMMERCE",
+    RESTAURANT = "RESTAURANT",
+    TECH = "TECH",
+    HEALTH = "HEALTH",
+    EDUCATION = "EDUCATION",
+    FINANCE = "FINANCE",
+    AGRICULTURE = "AGRICULTURE",
+    OTHER = "OTHER"
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 export enum CompanySize {
-    SMALL = "1-5 employes",
-    MEDIUM = "6-20 employes",
-    LARGE = "21-50 employes",
-    XLARGE = "50+ employes"
+    SMALL = "SMALL",
+    MEDIUM = "MEDIUM",
+    LARGE = "LARGE",
+    XLARGE = "XLARGE"
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 export enum HearAboutUs {
-    WORD_OF_MOUTH = "Bouche a oreille",
-    SOCIAL_MEDIA = "Reseaux sociaux",
-    GOOGLE = "Google",
-    FRIEND = "Un ami me l'a recommande",
-    WHATSAPP = "WhatsApp",
-    OTHER = "Autre"
+    WORD_OF_MOUTH = "WORD_OF_MOUTH",
+    SOCIAL_MEDIA = "SOCIAL_MEDIA",
+    GOOGLE = "GOOGLE",
+    FRIEND = "FRIEND",
+    WHATSAPP = "WHATSAPP",
+    OTHER = "OTHER"
 }
 
 export interface OnboardingData {

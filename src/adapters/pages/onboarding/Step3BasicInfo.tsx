@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AccountType } from '../../../entities/Onboarding'
 import { useOnboarding } from '../../../use_cases/hooks/useOnboarding'
 import { colors } from "../../../styles/token.ts";
 import PageAnimation from "../../components/ui/PageAnimation.tsx";
@@ -38,13 +39,25 @@ export default function Step3BasicInfo() {
 
     function handleContinue() {
         if (!isValid) return
+
+        // On met d'abord à jour le contexte global de l'onboarding
         updateOnboarding({
             firstname: form.firstname,
             lastname: form.lastname,
             email: form.email,
-            password: form.password
+            password: form.password,
+            // On assigne par défaut le type de compte comme profession si non renseigné
+            profession: data.account_type === AccountType.ENTREPRISE ? "Gérant / Chef d'entreprise" : "Freelance / Particulier"
         })
-        navigate('/onboarding/step4')
+
+        // Aiguillage intelligent selon le type de compte choisi à l'étape 1
+        if (data.account_type === AccountType.ENTREPRISE) {
+            // Si c'est une entreprise, on va référencer les infos de sa société
+            navigate('/onboarding/step3-entreprise')
+        } else {
+            // Si c'est un individuel, on passe à l'étape finale (Step 4)
+            navigate('/onboarding/step4')
+        }
     }
 
     return (
@@ -58,6 +71,7 @@ export default function Step3BasicInfo() {
                 <header className="w-full flex items-center justify-between px-10 py-6 max-w-[1280px] mx-auto relative z-10">
                     <span className="text-xl font-black tracking-tight text-[#1e5138]">Klaaro.</span>
                     <button
+                        type="button"
                         onClick={() => navigate('/welcome')}
                         style={{ color: colors.onSurfaceVariant }}
                         className="hover:text-black transition-colors flex items-center gap-1 text-sm font-bold"
@@ -86,7 +100,7 @@ export default function Step3BasicInfo() {
                                 Presque terminé !
                             </h1>
                             <p className="text-xs font-semibold text-gray-500">
-                                Créez votre compte pour accéder à Klaaro.
+                                Créez votre compte personnel pour accéder à Klaaro.
                             </p>
                         </div>
 
@@ -172,8 +186,8 @@ export default function Step3BasicInfo() {
                                             ))}
                                         </div>
                                         <span className="text-[10px] font-black uppercase tracking-wide mt-0.5" style={{ color: strengthColors[strength] }}>
-                                        Force : {strengthLabels[strength]}
-                                    </span>
+                                            Force : {strengthLabels[strength]}
+                                        </span>
                                     </div>
                                 )}
                             </div>
@@ -223,7 +237,7 @@ export default function Step3BasicInfo() {
                                 }
                             `}
                             >
-                                Créer mon compte
+                                Continuer
                                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
                             </button>
                         </div>
@@ -231,6 +245,5 @@ export default function Step3BasicInfo() {
                 </main>
             </div>
         </PageAnimation>
-
     )
 }
