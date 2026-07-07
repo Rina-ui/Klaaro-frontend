@@ -53,7 +53,7 @@ export default function Step3BasicInfo() {
         // Aiguillage intelligent selon le type de compte choisi à l'étape 1
         if (data.account_type === AccountType.ENTREPRISE) {
             // Si c'est une entreprise, on va référencer les infos de sa société
-            navigate('/onboarding/step3-entreprise')
+            navigate('/onboarding/step3.1')
         } else {
             // Si c'est un individuel, on passe à l'étape finale (Step 4)
             navigate('/onboarding/step4')
