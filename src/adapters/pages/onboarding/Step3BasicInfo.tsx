@@ -8,6 +8,8 @@ import PageAnimation from "../../components/ui/PageAnimation.tsx";
 export default function Step3BasicInfo() {
     const navigate = useNavigate()
     const { data, updateOnboarding } = useOnboarding()
+
+    // États locaux
     const [form, setForm] = useState({
         firstname: data.firstname || '',
         lastname: data.lastname || '',
@@ -16,10 +18,12 @@ export default function Step3BasicInfo() {
         password: '',
         confirmPassword: ''
     })
+
+    // Sécurité : On initialise avec ce qu'il y a dans le contexte, ou INDIVIDUAL par défaut
+    const [accountType, setAccountType] = useState<AccountType>(data.account_type || AccountType.INDIVIDUAL)
+
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
-
-    // États pour gérer l'interaction API
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -46,8 +50,8 @@ export default function Step3BasicInfo() {
         setLoading(true)
         setError(null)
 
-        // Détermination de la profession par défaut selon le type de compte
-        const computedProfession = data.account_type === AccountType.ENTREPRISE
+        // Détermination de la profession selon le choix actuel sur la page
+        const computedProfession = accountType === AccountType.ENTREPRISE
             ? "Gérant / Chef d'entreprise"
             : "Freelance / Particulier";
 
@@ -65,36 +69,35 @@ export default function Step3BasicInfo() {
                     password: form.password,
                     phone: form.phone || null,
                     profession: computedProfession,
-                    role: data.account_type // 👈 ICI : On passe la valeur à 'role' pour satisfaire FastAPI !
+                    account_type: accountType.toLowerCase(),
+                    role: "user"
                 }),
             });
 
             const responseData = await response.json();
 
             if (!response.ok) {
-                // Décodage intelligent des erreurs de validation 422 de FastAPI
                 if (responseData.detail && Array.isArray(responseData.detail)) {
                     const firstError = responseData.detail[0];
                     const fieldName = firstError.loc[firstError.loc.length - 1];
                     throw new Error(`Erreur sur le champ '${fieldName}' : ${firstError.msg}`);
                 }
-
                 throw new Error(responseData.detail || "Une erreur est survenue lors de l'inscription.");
             }
 
             console.log("Utilisateur créé avec succès !", responseData);
 
-            // Mise à jour du contexte global d'onboarding
+            // Mise à jour finale du contexte
             updateOnboarding({
                 firstname: form.firstname,
                 lastname: form.lastname,
                 email: form.email,
                 password: form.password,
-                profession: computedProfession
+                profession: computedProfession,
+                account_type: accountType
             })
 
-            // Redirection intelligente selon le type de compte
-            if (data.account_type === AccountType.ENTREPRISE) {
+            if (accountType === AccountType.ENTREPRISE) {
                 navigate('/onboarding/step3.1')
             } else {
                 navigate('/onboarding/step4')
@@ -151,7 +154,6 @@ export default function Step3BasicInfo() {
                             </p>
                         </div>
 
-                        {/* Bloc d'affichage des erreurs */}
                         {error && (
                             <div className="p-3.5 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-2xl text-center shadow-sm max-h-24 overflow-y-auto">
                                 {error}
@@ -159,6 +161,26 @@ export default function Step3BasicInfo() {
                         )}
 
                         <div className="flex flex-col gap-4">
+                            {/* Type de compte (Sélecteur de secours pour le Back) */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Type de compte</label>
+                                <div className="grid grid-cols-2 gap-2 bg-white/40 backdrop-blur-md p-1 rounded-2xl border border-white/40">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAccountType(AccountType.INDIVIDUAL)}
+                                        className={`py-2 rounded-xl text-xs font-black transition-all ${accountType === AccountType.INDIVIDUAL ? 'bg-[#1e5138] text-white shadow-sm' : 'text-gray-600 hover:bg-white/40'}`}
+                                    >
+                                        Individuel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAccountType(AccountType.ENTREPRISE)}
+                                        className={`py-2 rounded-xl text-xs font-black transition-all ${accountType === AccountType.ENTREPRISE ? 'bg-[#1e5138] text-white shadow-sm' : 'text-gray-600 hover:bg-white/40'}`}
+                                    >
+                                        Entreprise
+                                    </button>
+                                </div>
+                            </div>
 
                             {/* Prénom & Nom */}
                             <div className="grid grid-cols-2 gap-3">
@@ -234,7 +256,6 @@ export default function Step3BasicInfo() {
                                     </button>
                                 </div>
 
-                                {/* Indicateur de force */}
                                 {form.password.length > 0 && (
                                     <div className="flex flex-col gap-1 mt-1 px-1">
                                         <div className="flex gap-1">

@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {createEnterprise, type EnterprisePayload} from "../../../infrastructure/api/authApi.ts";
 import PageAnimation from "../../components/ui/PageAnimation.tsx";
+
+export interface EnterprisePayload {
+    name: string;
+    email: string;
+    number: string;
+    location: string;
+}
 
 export default function Step3EnterpriseInfo() {
     const navigate = useNavigate()
@@ -27,14 +33,41 @@ export default function Step3EnterpriseInfo() {
         setErrorMessage(null)
 
         try {
-            // On appelle ton API avec le token JWT déjà présent dans le localStorage
-            await createEnterprise(form)
+            // 1. Récupération du token stocké à l'étape précédente (inscription)
+            const token = localStorage.getItem('token') || localStorage.getItem('access_token');
 
-            // Tout est bon ! L'organisation est créée, on l'envoie sur l'écran de bienvenue final
+            if (!token) {
+                throw new Error("Session expirée ou utilisateur non authentifié. Veuillez vous reconnecter.");
+            }
+
+            // 2. Envoi de la requête au backend avec le header Authorization
+            const response = await fetch('http://127.0.0.1:8000/enterprise/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // On transmet le badge JWT ici !
+                },
+                body: JSON.stringify({
+                    name: form.name,
+                    email: form.email,
+                    number: `+228${form.number}`, // Format propre pour le Togo
+                    location: form.location
+                })
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                // Si le backend renvoie un message d'erreur précis (ex: detail)
+                throw new Error(responseData.detail || "Impossible de configurer l'entreprise.");
+            }
+
+            console.log("Entreprise créée avec succès !", responseData);
+
+            // 3. Redirection vers la dernière étape du parcours d'onboarding
             navigate('/onboarding/step4')
-        } catch (error: unknown) {
-            // @ts-ignore
-            setErrorMessage(error.message || "Impossible de configurer l'entreprise.")
+        } catch (error: any) {
+            setErrorMessage(error.message || "Une erreur est survenue lors de la création.");
         } finally {
             setIsLoading(false)
         }
@@ -53,7 +86,7 @@ export default function Step3EnterpriseInfo() {
                     <span className="text-xl font-black tracking-tight text-[#1e5138]">Klaaro.</span>
                 </header>
 
-                {/* Progress Bar (Étape intermédiaire avant la fin) */}
+                {/* Progress Bar */}
                 <div className="w-full max-w-xl mx-auto px-10 mt-3 relative z-10">
                     <div className="h-1.5 w-full bg-white/50 backdrop-blur-sm rounded-full overflow-hidden">
                         <div className="h-full rounded-full bg-[#1e5138] transition-all duration-500" style={{ width: '88%' }} />
@@ -77,7 +110,7 @@ export default function Step3EnterpriseInfo() {
                         </div>
 
                         {errorMessage && (
-                            <div className="bg-[#e63946]/10 border border-[#e63946]/30 text-[#e63946] text-xs font-bold p-3.5 rounded-xl">
+                            <div className="bg-[#e63946]/10 border border-[#e63946]/30 text-[#e63946] text-xs font-bold p-3.5 rounded-xl text-center shadow-sm">
                                 {errorMessage}
                             </div>
                         )}
@@ -88,10 +121,11 @@ export default function Step3EnterpriseInfo() {
                                 <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Nom de l'entreprise</label>
                                 <input
                                     name="name"
+                                    disabled={isLoading}
                                     value={form.name}
                                     onChange={handleChange}
                                     placeholder="Ex: Klaaro S.A."
-                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
+                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all disabled:opacity-60"
                                 />
                             </div>
 
@@ -101,39 +135,45 @@ export default function Step3EnterpriseInfo() {
                                 <input
                                     name="email"
                                     type="email"
+                                    disabled={isLoading}
                                     value={form.email}
                                     onChange={handleChange}
                                     placeholder="contact@entreprise.com"
-                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
+                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all disabled:opacity-60"
                                 />
                             </div>
 
-                            {/* Numéro IFU / Registre */}
+                            {/* Numéro de téléphone */}
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Numéro d'identification (IFU / RCCM)</label>
-                                <input
-                                    name="number"
-                                    value={form.number}
-                                    onChange={handleChange}
-                                    placeholder="Ex: 123456789"
-                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
-                                />
+                                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Numéro de téléphone de l'entreprise</label>
+                                <div className="flex items-center rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md overflow-hidden focus-within:bg-white focus-within:border-[#1e5138] transition-all">
+                                    <span className="px-4 py-3 text-xs font-black text-gray-600 bg-white/30 border-r border-white/60">🇹🇬 +228</span>
+                                    <input
+                                        name="number"
+                                        disabled={isLoading}
+                                        value={form.number}
+                                        onChange={handleChange}
+                                        placeholder="90 00 00 00"
+                                        className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent disabled:opacity-60"
+                                    />
+                                </div>
                             </div>
 
-                            {/* Siège social / Localisation */}
+                            {/* Siège social / Ville */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Siège social / Ville</label>
                                 <input
                                     name="location"
+                                    disabled={isLoading}
                                     value={form.location}
                                     onChange={handleChange}
                                     placeholder="Ex: Lomé, Togo"
-                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
+                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all disabled:opacity-60"
                                 />
                             </div>
                         </div>
 
-                        {/* Bouton de Soumission */}
+                        {/* Bouton de validation */}
                         <div className="pt-2">
                             <button
                                 type="button"
@@ -147,7 +187,7 @@ export default function Step3EnterpriseInfo() {
                                 `}
                             >
                                 {isLoading ? 'Configuration de l\'espace...' : 'Créer l\'organisation'}
-                                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                                {!isLoading && <span className="material-symbols-outlined text-sm">arrow_forward</span>}
                             </button>
                         </div>
                     </section>

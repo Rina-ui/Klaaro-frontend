@@ -7,8 +7,11 @@ import PageAnimation from "../../components/ui/PageAnimation.tsx";
 
 export default function Step1AccountType() {
     const navigate = useNavigate()
-    const { updateOnboarding } = useOnboarding()
-    const [selected, setSelected] = useState<AccountType | null>(null)
+    // 1. On récupère 'data' du contexte global pour vérifier si un choix a déjà été fait
+    const { data, updateOnboarding } = useOnboarding()
+
+    // 2. On initialise le useState avec la valeur existante s'il y en a une !
+    const [selected, setSelected] = useState<AccountType | null>(data.account_type || null)
 
     function handleSelect(type: AccountType) {
         setSelected(type)
@@ -32,7 +35,7 @@ export default function Step1AccountType() {
                 <div className="absolute top-[-15%] right-[-10%] w-[900px] h-[700px] bg-[#1e5138]/15 rounded-[180px] rotate-[-12deg] pointer-events-none z-0 mix-blend-multiply" />
                 <div className="absolute bottom-[-20%] left-[-12%] w-[850px] h-[600px] bg-[#1e5138]/20 rounded-[140px] rotate-[20deg] pointer-events-none z-0 mix-blend-multiply" />
 
-                {/* Header (z-10 pour flotter au-dessus du fond) */}
+                {/* Header */}
                 <header className="w-full flex items-center justify-between px-10 py-6 max-w-[1280px] mx-auto relative z-10">
                     <span className="text-2xl font-black tracking-tight text-[#1e5138]">Klaaro.</span>
                     <button
@@ -60,7 +63,7 @@ export default function Step1AccountType() {
                 <main className="flex-grow flex items-center justify-center p-6 md:p-10 relative z-10">
                     <section className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
-                        {/* Left Side (Textes explicatifs) */}
+                        {/* Left Side */}
                         <div className="flex flex-col gap-5">
                             <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-2 bg-[#1e5138]/10 text-[#1e5138]">
                                 <span className="material-symbols-outlined text-2xl font-bold">waving_hand</span>
@@ -72,7 +75,6 @@ export default function Step1AccountType() {
                                 Agissez-vous en tant qu'individu cherchant à optimiser ses revenus ou pour le compte d'une entreprise en pleine croissance ?
                             </p>
 
-                            {/* Decorative Card style Verre épuré */}
                             <div className="relative w-full h-40 mt-6 rounded-[32px] bg-white/40 backdrop-blur-md border border-white/40 overflow-hidden hidden lg:block">
                                 <div className="absolute bottom-5 left-5 right-5">
                                     <div className="p-3.5 bg-white rounded-2xl flex items-center gap-3 shadow-sm border border-gray-100">
@@ -142,7 +144,7 @@ export default function Step1AccountType() {
                                 </div>
                             </button>
 
-                            {/* Barre de Actions de Navigation */}
+                            {/* Actions de Navigation */}
                             <div className="mt-8 flex items-center justify-between pt-4">
                                 <button
                                     onClick={() => navigate('/welcome')}
@@ -170,6 +172,5 @@ export default function Step1AccountType() {
                 </main>
             </div>
         </PageAnimation>
-
     )
 }
