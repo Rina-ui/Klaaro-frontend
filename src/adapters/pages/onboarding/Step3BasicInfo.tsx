@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AccountType } from '../../../entities/Onboarding'
 import { useOnboarding } from '../../../use_cases/hooks/useOnboarding'
@@ -19,6 +19,10 @@ export default function Step3BasicInfo() {
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
 
+    // États pour gérer l'interaction API
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+
     function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
         setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
     }
@@ -35,35 +39,78 @@ export default function Step3BasicInfo() {
     const strengthLabels = ['', 'Faible', 'Moyen', 'Fort']
     const strength = getPasswordStrength()
 
-    const isValid = form.firstname && form.lastname && form.email && form.password && form.password === form.confirmPassword
+    const isValid = form.firstname && form.lastname && form.email && form.password && form.password === form.confirmPassword && !loading
 
-    function handleContinue() {
+    async function handleContinue() {
         if (!isValid) return
+        setLoading(true)
+        setError(null)
 
-        // On met d'abord à jour le contexte global de l'onboarding
-        updateOnboarding({
-            firstname: form.firstname,
-            lastname: form.lastname,
-            email: form.email,
-            password: form.password,
-            // On assigne par défaut le type de compte comme profession si non renseigné
-            profession: data.account_type === AccountType.ENTREPRISE ? "Gérant / Chef d'entreprise" : "Freelance / Particulier"
-        })
+        // Détermination de la profession par défaut selon le type de compte
+        const computedProfession = data.account_type === AccountType.ENTREPRISE
+            ? "Gérant / Chef d'entreprise"
+            : "Freelance / Particulier";
 
-        // Aiguillage intelligent selon le type de compte choisi à l'étape 1
-        if (data.account_type === AccountType.ENTREPRISE) {
-            // Si c'est une entreprise, on va référencer les infos de sa société
-            navigate('/onboarding/step3.1')
-        } else {
-            // Si c'est un individuel, on passe à l'étape finale (Step 4)
-            navigate('/onboarding/step4')
+        try {
+            // Appel API direct vers l'endpoint d'inscription FastAPI
+            const response = await fetch('http://127.0.0.1:8000/user/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    firstname: form.firstname,
+                    lastname: form.lastname,
+                    email: form.email,
+                    password: form.password,
+                    phone: form.phone || null,
+                    profession: computedProfession,
+                    role: data.account_type // 👈 ICI : On passe la valeur à 'role' pour satisfaire FastAPI !
+                }),
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                // Décodage intelligent des erreurs de validation 422 de FastAPI
+                if (responseData.detail && Array.isArray(responseData.detail)) {
+                    const firstError = responseData.detail[0];
+                    const fieldName = firstError.loc[firstError.loc.length - 1];
+                    throw new Error(`Erreur sur le champ '${fieldName}' : ${firstError.msg}`);
+                }
+
+                throw new Error(responseData.detail || "Une erreur est survenue lors de l'inscription.");
+            }
+
+            console.log("Utilisateur créé avec succès !", responseData);
+
+            // Mise à jour du contexte global d'onboarding
+            updateOnboarding({
+                firstname: form.firstname,
+                lastname: form.lastname,
+                email: form.email,
+                password: form.password,
+                profession: computedProfession
+            })
+
+            // Redirection intelligente selon le type de compte
+            if (data.account_type === AccountType.ENTREPRISE) {
+                navigate('/onboarding/step3.1')
+            } else {
+                navigate('/onboarding/step4')
+            }
+
+        } catch (err: any) {
+            setError(err.message || "Impossible de contacter le serveur Klaaro.");
+        } finally {
+            setLoading(false)
         }
     }
 
     return (
         <PageAnimation>
             <div className="min-h-screen flex flex-col overflow-x-hidden relative select-none bg-[#e2e4e3]">
-                {/*background*/}
+                {/* Background */}
                 <div className="absolute top-[-20%] left-[-15%] w-[900px] h-[750px] bg-[#1e5138]/15 rounded-[240px] rotate-[-15deg] pointer-events-none z-0 mix-blend-multiply" />
                 <div className="absolute bottom-[-10%] right-[-12%] w-[800px] h-[600px] bg-[#1e5138]/20 rounded-[180px] rotate-[10deg] pointer-events-none z-0 mix-blend-multiply" />
 
@@ -104,6 +151,13 @@ export default function Step3BasicInfo() {
                             </p>
                         </div>
 
+                        {/* Bloc d'affichage des erreurs */}
+                        {error && (
+                            <div className="p-3.5 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-2xl text-center shadow-sm max-h-24 overflow-y-auto">
+                                {error}
+                            </div>
+                        )}
+
                         <div className="flex flex-col gap-4">
 
                             {/* Prénom & Nom */}
@@ -112,20 +166,22 @@ export default function Step3BasicInfo() {
                                     <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Prénom</label>
                                     <input
                                         name="firstname"
+                                        disabled={loading}
                                         value={form.firstname}
                                         onChange={handleChange}
                                         placeholder="Koffi"
-                                        className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
+                                        className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all disabled:opacity-60"
                                     />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Nom</label>
                                     <input
                                         name="lastname"
+                                        disabled={loading}
                                         value={form.lastname}
                                         onChange={handleChange}
                                         placeholder="Mensah"
-                                        className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
+                                        className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all disabled:opacity-60"
                                     />
                                 </div>
                             </div>
@@ -136,10 +192,11 @@ export default function Step3BasicInfo() {
                                 <input
                                     name="email"
                                     type="email"
+                                    disabled={loading}
                                     value={form.email}
                                     onChange={handleChange}
                                     placeholder="koffi@example.com"
-                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all"
+                                    className="px-4 py-3 rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md text-xs font-bold text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-[#1e5138] transition-all disabled:opacity-60"
                                 />
                             </div>
 
@@ -150,10 +207,11 @@ export default function Step3BasicInfo() {
                                     <span className="px-4 py-3 text-xs font-black text-gray-600 bg-white/30 border-r border-white/60">🇹🇬 +228</span>
                                     <input
                                         name="phone"
+                                        disabled={loading}
                                         value={form.phone}
                                         onChange={handleChange}
                                         placeholder="90 00 00 00"
-                                        className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
+                                        className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent disabled:opacity-60"
                                     />
                                 </div>
                             </div>
@@ -165,10 +223,11 @@ export default function Step3BasicInfo() {
                                     <input
                                         name="password"
                                         type={showPassword ? 'text' : 'password'}
+                                        disabled={loading}
                                         value={form.password}
                                         onChange={handleChange}
                                         placeholder="••••••••"
-                                        className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
+                                        className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent disabled:opacity-60"
                                     />
                                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="px-3 text-gray-400 hover:text-black">
                                         <span className="material-symbols-outlined text-base">{showPassword ? 'visibility_off' : 'visibility'}</span>
@@ -201,10 +260,11 @@ export default function Step3BasicInfo() {
                                     <input
                                         name="confirmPassword"
                                         type={showConfirm ? 'text' : 'password'}
+                                        disabled={loading}
                                         value={form.confirmPassword}
                                         onChange={handleChange}
                                         placeholder="••••••••"
-                                        className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent"
+                                        className="flex-grow px-4 py-3 text-xs font-bold text-gray-900 outline-none bg-transparent disabled:opacity-60"
                                     />
                                     <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="px-3 text-gray-400 hover:text-black">
                                         <span className="material-symbols-outlined text-base">{showConfirm ? 'visibility_off' : 'visibility'}</span>
@@ -220,8 +280,9 @@ export default function Step3BasicInfo() {
                         <div className="flex items-center justify-between pt-4 mt-2">
                             <button
                                 type="button"
+                                disabled={loading}
                                 onClick={() => navigate(-1)}
-                                className="flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-black transition-colors"
+                                className="flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-black transition-colors disabled:opacity-50"
                             >
                                 <span className="material-symbols-outlined text-sm">arrow_back</span>
                                 Précédent
@@ -237,8 +298,8 @@ export default function Step3BasicInfo() {
                                 }
                             `}
                             >
-                                Continuer
-                                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                                {loading ? "Création..." : "Continuer"}
+                                {!loading && <span className="material-symbols-outlined text-sm">arrow_forward</span>}
                             </button>
                         </div>
                     </section>

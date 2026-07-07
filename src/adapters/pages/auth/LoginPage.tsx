@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
-import {LOGIN_CONTENT} from "../../../entities/loginContent.ts";
+import { LOGIN_CONTENT } from "../../../entities/loginContent.ts";
 import PageAnimation from "../../components/ui/PageAnimation.tsx";
 
 export default function LoginPage(): React.JSX.Element {
@@ -10,18 +10,83 @@ export default function LoginPage(): React.JSX.Element {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // États pour gérer l'interaction avec le backend
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log({ email, password });
+        setLoading(true);
+        setError(null);
+
+        try {
+            // =========================================================================
+            // OPTION 1 : Envoi au format JSON classique (Le plus probable si 400 Bad Request)
+            // Note : Si ton Pydantic attend 'username' au lieu de 'email', remplace la ligne du body par :
+            // body: JSON.stringify({ username: email, password }),
+            // =========================================================================
+            const response = await fetch('http://127.0.0.1:8000/user/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            // =========================================================================
+            // OPTION 2 : Si ton FastAPI utilise OAuth2PasswordRequestForm (Form Data)
+            // Décommente ce bloc ci-dessous et commente l'OPTION 1 si l'erreur 400 persiste.
+            // =========================================================================
+            /*
+            const formData = new URLSearchParams();
+            formData.append('username', email); // Souvent 'username' dans le standard FastAPI
+            formData.append('password', password);
+
+            const response = await fetch('http://127.0.0.1:8000/user/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData,
+            });
+            */
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Si FastAPI renvoie une erreur de validation (422), on extrait le message proprement
+                const errorMsg = data.detail && typeof data.detail === 'object'
+                    ? JSON.stringify(data.detail)
+                    : data.detail;
+                throw new Error(errorMsg || "Identifiants incorrects ou structure de requête invalide.");
+            }
+
+            console.log("Connexion réussie !", data);
+
+            // Stockage du token JWT retourné par FastAPI
+            if (data.access_token) {
+                localStorage.setItem('token', data.access_token);
+            } else if (data.token) {
+                localStorage.setItem('token', data.token); // Au cas où ta clé s'appelle juste 'token'
+            }
+
+            // Redirection vers le tableau de bord
+            window.location.href = "/dashboard";
+
+        } catch (err: any) {
+            setError(err.message || "Impossible de joindre le serveur de Klaaro.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
         <PageAnimation>
             <div className="min-h-screen bg-[#e2e4e3] text-[#1a1a1a] font-sans antialiased relative overflow-hidden flex items-center justify-center px-4 select-none">
 
+                {/* Arrière-plans décoratifs */}
                 <div className="absolute top-[-15%] left-[-10%] w-[800px] h-[650px] bg-[#1e5138]/15 rounded-[180px] rotate-[12deg] pointer-events-none z-0 mix-blend-multiply" />
                 <div className="absolute bottom-[-20%] right-[-10%] w-[850px] h-[600px] bg-[#1e5138]/25 rounded-[140px] rotate-[-15deg] pointer-events-none z-0 mix-blend-multiply" />
-
                 <div className="absolute w-[500px] h-[500px] bg-[#1e5138]/5 rounded-full blur-[120px] pointer-events-none z-0" />
 
                 <div className="w-full max-w-[460px] bg-white/70 backdrop-blur-xl border border-white/50 p-8 md:p-10 rounded-[40px] shadow-xl relative z-10 flex flex-col transition-all duration-300">
@@ -32,6 +97,13 @@ export default function LoginPage(): React.JSX.Element {
                         <h1 className="text-3xl font-black tracking-tight text-gray-900 leading-tight mb-2">{title}</h1>
                         <p className="text-xs text-gray-500 font-semibold leading-relaxed">{subtitle}</p>
                     </div>
+
+                    {/* MESSAGE D'ERREUR DYNAMIQUE (Utile pour voir le retour 400/422) */}
+                    {error && (
+                        <div className="mb-4 p-3.5 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-2xl text-center shadow-sm max-h-24 overflow-y-auto">
+                            {error}
+                        </div>
+                    )}
 
                     {/* FORMULAIRE */}
                     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -49,7 +121,8 @@ export default function LoginPage(): React.JSX.Element {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder={fields.email.placeholder}
-                                    className="w-full pl-12 pr-4 py-3.5 bg-white/90 border border-gray-100 rounded-2xl text-xs font-medium focus:outline-none focus:border-gray-300 text-gray-900 shadow-sm transition-all"
+                                    disabled={loading}
+                                    className="w-full pl-12 pr-4 py-3.5 bg-white/90 border border-gray-100 rounded-2xl text-xs font-medium focus:outline-none focus:border-gray-300 text-gray-900 shadow-sm transition-all disabled:opacity-60"
                                 />
                             </div>
                         </div>
@@ -72,7 +145,8 @@ export default function LoginPage(): React.JSX.Element {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder={fields.password.placeholder}
-                                    className="w-full pl-12 pr-12 py-3.5 bg-white/90 border border-gray-100 rounded-2xl text-xs font-medium focus:outline-none focus:border-gray-300 text-gray-900 shadow-sm transition-all"
+                                    disabled={loading}
+                                    className="w-full pl-12 pr-12 py-3.5 bg-white/90 border border-gray-100 rounded-2xl text-xs font-medium focus:outline-none focus:border-gray-300 text-gray-900 shadow-sm transition-all disabled:opacity-60"
                                 />
                                 <button
                                     type="button"
@@ -87,9 +161,12 @@ export default function LoginPage(): React.JSX.Element {
                         {/* BOUTON DE VALIDATION */}
                         <button
                             type="submit"
-                            className="w-full bg-[#1e5138] text-white text-xs font-bold py-4 rounded-2xl hover:bg-[#153a28] transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 mt-2 cursor-pointer"
+                            disabled={loading}
+                            className={`w-full text-white text-xs font-bold py-4 rounded-2xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 mt-2 cursor-pointer ${
+                                loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#1e5138] hover:bg-[#153a28]'
+                            }`}
                         >
-                            {submitBtn} <ArrowRight size={14} />
+                            {loading ? "Connexion en cours..." : submitBtn} {!loading && <ArrowRight size={14} />}
                         </button>
                     </form>
 
@@ -106,6 +183,5 @@ export default function LoginPage(): React.JSX.Element {
                 </div>
             </div>
         </PageAnimation>
-
-);
+    );
 }
