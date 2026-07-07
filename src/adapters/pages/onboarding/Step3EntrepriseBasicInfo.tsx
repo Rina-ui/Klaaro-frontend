@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../../use_cases/hooks/useAuth'
 import PageAnimation from "../../components/ui/PageAnimation.tsx";
 
 export interface EnterprisePayload {
@@ -11,6 +12,7 @@ export interface EnterprisePayload {
 
 export default function Step3EnterpriseInfo() {
     const navigate = useNavigate()
+    const { token } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -33,24 +35,24 @@ export default function Step3EnterpriseInfo() {
         setErrorMessage(null)
 
         try {
-            // 1. Récupération du token stocké à l'étape précédente (inscription)
-            const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+            // VERIFICATION : Utilisation du token du contexte global (avec fallback localStorage au cas où)
+            const activeToken = token || localStorage.getItem('klaaro_token');
 
-            if (!token) {
+            if (!activeToken) {
                 throw new Error("Session expirée ou utilisateur non authentifié. Veuillez vous reconnecter.");
             }
 
-            // 2. Envoi de la requête au backend avec le header Authorization
+            // Envoi de la requête au backend avec le header Authorization
             const response = await fetch('http://127.0.0.1:8000/enterprise/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` // On transmet le badge JWT ici !
+                    'Authorization': `Bearer ${activeToken}` // Injection sécurisée du JWT
                 },
                 body: JSON.stringify({
                     name: form.name,
                     email: form.email,
-                    number: `+228${form.number}`, // Format propre pour le Togo
+                    number: `+228${form.number}`, // Format international pour le Togo
                     location: form.location
                 })
             });
@@ -58,13 +60,18 @@ export default function Step3EnterpriseInfo() {
             const responseData = await response.json();
 
             if (!response.ok) {
-                // Si le backend renvoie un message d'erreur précis (ex: detail)
+                // Gestion fine des erreurs renvoyées par ton FastAPI
+                if (responseData.detail && Array.isArray(responseData.detail)) {
+                    const firstError = responseData.detail[0];
+                    const fieldName = firstError.loc[firstError.loc.length - 1];
+                    throw new Error(`Erreur sur le champ '${fieldName}' : ${firstError.msg}`);
+                }
                 throw new Error(responseData.detail || "Impossible de configurer l'entreprise.");
             }
 
             console.log("Entreprise créée avec succès !", responseData);
 
-            // 3. Redirection vers la dernière étape du parcours d'onboarding
+            // Redirection vers la dernière étape du parcours d'onboarding
             navigate('/onboarding/step4')
         } catch (error: any) {
             setErrorMessage(error.message || "Une erreur est survenue lors de la création.");
@@ -110,7 +117,7 @@ export default function Step3EnterpriseInfo() {
                         </div>
 
                         {errorMessage && (
-                            <div className="bg-[#e63946]/10 border border-[#e63946]/30 text-[#e63946] text-xs font-bold p-3.5 rounded-xl text-center shadow-sm">
+                            <div className="bg-[#e63946]/10 border border-[#e63946]/30 text-[#e63946] text-xs font-bold p-3.5 rounded-xl text-center shadow-sm max-h-24 overflow-y-auto">
                                 {errorMessage}
                             </div>
                         )}

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Bell, MessageSquare } from 'lucide-react'
 
 import { useDashboardData } from "../../../use_cases/hooks/useDashboard.ts";
+import { useAuth } from "../../../use_cases/hooks/useAuth.ts";
 import TopStatsCards from "./TopStatsCards.tsx";
 import PredictionChart from "./PredictionChart.tsx";
 import WhatsAppCard from "./WhatsAppCard.tsx";
@@ -15,6 +16,7 @@ export default function DashboardPage() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { topStats, recentFiles, recentActivity } = useDashboardData()
+  const { user } = useAuth()
 
   return (
       <div className="min-h-screen bg-[#f8f9fa] text-[#1a1a1a] font-sans flex p-4 md:p-6 gap-0 overflow-hidden relative items-start">
@@ -35,13 +37,15 @@ export default function DashboardPage() {
             <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/20 z-40 md:hidden" />
         )}
 
-        {/* Le contenu principal est en z-10 pour survoler les peintures de fond */}
         <main className={`flex-1 flex flex-col w-full max-w-[1600px] mx-auto relative z-10 transition-all duration-500 ease-in-out ${isCollapsed ? 'md:pl-24' : 'md:pl-28'}`}>
 
           <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5 w-full">
             <div>
               <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden mb-2 text-sm bg-white px-3 py-1 rounded-md border border-gray-200 font-medium">Menu</button>
-              <h1 className="text-xl font-bold tracking-tight">Hello, Marina!</h1>
+              {/* 🔴 CORRECTION : Prénom dynamique */}
+              <h1 className="text-xl font-bold tracking-tight">
+                Hello, {user?.firstname || 'Collaborateur'} !
+              </h1>
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto justify-end">

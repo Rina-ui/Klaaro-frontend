@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { LOGIN_CONTENT } from "../../../entities/loginContent.ts";
+import { useAuth } from "../../../use_cases/hooks/useAuth.ts";
 import PageAnimation from "../../components/ui/PageAnimation.tsx";
 
 export default function LoginPage(): React.JSX.Element {
     const { title, subtitle, fields, forgotPassword, submitBtn, noAccount, registerLink } = LOGIN_CONTENT;
+    const navigate = useNavigate();
+    const { saveSession } = useAuth();
 
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState('');
@@ -20,11 +24,7 @@ export default function LoginPage(): React.JSX.Element {
         setError(null);
 
         try {
-            // =========================================================================
-            // OPTION 1 : Envoi au format JSON classique (Le plus probable si 400 Bad Request)
-            // Note : Si ton Pydantic attend 'username' au lieu de 'email', remplace la ligne du body par :
-            // body: JSON.stringify({ username: email, password }),
-            // =========================================================================
+            // Envoi au format JSON classique
             const response = await fetch('http://127.0.0.1:8000/user/login', {
                 method: 'POST',
                 headers: {
@@ -33,28 +33,9 @@ export default function LoginPage(): React.JSX.Element {
                 body: JSON.stringify({ email, password }),
             });
 
-            // =========================================================================
-            // OPTION 2 : Si ton FastAPI utilise OAuth2PasswordRequestForm (Form Data)
-            // Décommente ce bloc ci-dessous et commente l'OPTION 1 si l'erreur 400 persiste.
-            // =========================================================================
-            /*
-            const formData = new URLSearchParams();
-            formData.append('username', email); // Souvent 'username' dans le standard FastAPI
-            formData.append('password', password);
-
-            const response = await fetch('http://127.0.0.1:8000/user/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: formData,
-            });
-            */
-
             const data = await response.json();
 
             if (!response.ok) {
-                // Si FastAPI renvoie une erreur de validation (422), on extrait le message proprement
                 const errorMsg = data.detail && typeof data.detail === 'object'
                     ? JSON.stringify(data.detail)
                     : data.detail;
@@ -63,15 +44,17 @@ export default function LoginPage(): React.JSX.Element {
 
             console.log("Connexion réussie !", data);
 
-            // Stockage du token JWT retourné par FastAPI
-            if (data.access_token) {
-                localStorage.setItem('token', data.access_token);
-            } else if (data.token) {
-                localStorage.setItem('token', data.token); // Au cas où ta clé s'appelle juste 'token'
+            // On utilise saveSession pour stocker le Token ET le profil utilisateur (data.user)
+            const token = data.access_token || data.token;
+            if (token && data.user) {
+                saveSession(token, data.user);
+                console.log("Session et profil utilisateur enregistrés avec succès !");
+            } else {
+                throw new Error("Le serveur n'a pas renvoyé les informations de l'utilisateur.");
             }
 
-            // Redirection vers le tableau de bord
-            window.location.href = "/dashboard";
+            //  Redirection fluide vers le tableau de bord avec React Router
+            navigate('/dashboard');
 
         } catch (err: any) {
             setError(err.message || "Impossible de joindre le serveur de Klaaro.");
@@ -98,7 +81,7 @@ export default function LoginPage(): React.JSX.Element {
                         <p className="text-xs text-gray-500 font-semibold leading-relaxed">{subtitle}</p>
                     </div>
 
-                    {/* MESSAGE D'ERREUR DYNAMIQUE (Utile pour voir le retour 400/422) */}
+                    {/* MESSAGE D'ERREUR */}
                     {error && (
                         <div className="mb-4 p-3.5 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-2xl text-center shadow-sm max-h-24 overflow-y-auto">
                             {error}

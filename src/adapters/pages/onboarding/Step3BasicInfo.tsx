@@ -2,14 +2,16 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AccountType } from '../../../entities/Onboarding'
 import { useOnboarding } from '../../../use_cases/hooks/useOnboarding'
+import { useAuth } from '../../../use_cases/hooks/useAuth'
 import { colors } from "../../../styles/token.ts";
 import PageAnimation from "../../components/ui/PageAnimation.tsx";
 
 export default function Step3BasicInfo() {
     const navigate = useNavigate()
     const { data, updateOnboarding } = useOnboarding()
+    const { saveSession } = useAuth()
 
-    // États locaux
+    // États locaux du formulaire
     const [form, setForm] = useState({
         firstname: data.firstname || '',
         lastname: data.lastname || '',
@@ -19,7 +21,7 @@ export default function Step3BasicInfo() {
         confirmPassword: ''
     })
 
-    // Sécurité : On initialise avec ce qu'il y a dans le contexte, ou INDIVIDUAL par défaut
+    // Type de compte (Individuel ou Entreprise)
     const [accountType, setAccountType] = useState<AccountType>(data.account_type || AccountType.INDIVIDUAL)
 
     const [showPassword, setShowPassword] = useState(false)
@@ -50,27 +52,28 @@ export default function Step3BasicInfo() {
         setLoading(true)
         setError(null)
 
-        // Détermination de la profession selon le choix actuel sur la page
         const computedProfession = accountType === AccountType.ENTREPRISE
             ? "Gérant / Chef d'entreprise"
             : "Freelance / Particulier";
 
+        const computedRole = accountType === AccountType.ENTREPRISE ? "admin" : "user";
+
         try {
-            // Appel API direct vers l'endpoint d'inscription FastAPI
+            // ÉTAPE A : Inscription de l'utilisateur
             const response = await fetch('http://127.0.0.1:8000/user/register', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     firstname: form.firstname,
                     lastname: form.lastname,
                     email: form.email,
                     password: form.password,
-                    phone: form.phone || null,
+                    phone: form.phone ? `+228${form.phone}` : null,
                     profession: computedProfession,
                     account_type: accountType.toLowerCase(),
-                    role: "user"
+                    role: computedRole
                 }),
             });
 
@@ -87,7 +90,43 @@ export default function Step3BasicInfo() {
 
             console.log("Utilisateur créé avec succès !", responseData);
 
-            // Mise à jour finale du contexte
+            // ÉTAPE B : Connexion automatique immédiate sur ton vrai endpoint JSON (/user/login)
+            const loginResponse = await fetch('http://127.0.0.1:8000/user/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: form.email,
+                    password: form.password
+                }),
+            });
+
+            const loginData = await loginResponse.json();
+
+            if (!loginResponse.ok) {
+                console.error("Détail complet de l'erreur Login du Backend :", loginData);
+
+                if (loginData.detail && Array.isArray(loginData.detail)) {
+                    const firstError = loginData.detail[0];
+                    const fieldName = firstError.loc[firstError.loc.length - 1];
+                    throw new Error(`Erreur de connexion (Champ '${fieldName}') : ${firstError.msg}`);
+                }
+                throw new Error(loginData.detail || "Compte créé, mais échec de la connexion automatique.");
+            }
+
+            // ÉTAPE C : Stockage persistant via ton hook useAuth (Token + Vrai Profil)
+            const token = loginData.access_token || loginData.token;
+            if (token && loginData.user) {
+                // On utilise ta fonction centrale saveSession
+                saveSession(token, loginData.user);
+                console.log("Session initialisée et vraies informations utilisateur enregistrées !");
+            } else if (token) {
+                // Secours au cas où la structure de ton login change un jour
+                localStorage.setItem('klaaro_token', token);
+            }
+
+            // Mise à jour du contexte Onboarding
             updateOnboarding({
                 firstname: form.firstname,
                 lastname: form.lastname,
@@ -97,6 +136,7 @@ export default function Step3BasicInfo() {
                 account_type: accountType
             })
 
+            // Redirection conditionnelle
             if (accountType === AccountType.ENTREPRISE) {
                 navigate('/onboarding/step3.1')
             } else {
@@ -104,7 +144,7 @@ export default function Step3BasicInfo() {
             }
 
         } catch (err: any) {
-            setError(err.message || "Impossible de contacter le serveur Klaaro.");
+            setError(err.message || "Impossible de joindre le serveur Klaaro.");
         } finally {
             setLoading(false)
         }
@@ -113,7 +153,7 @@ export default function Step3BasicInfo() {
     return (
         <PageAnimation>
             <div className="min-h-screen flex flex-col overflow-x-hidden relative select-none bg-[#e2e4e3]">
-                {/* Background */}
+                {/* Background Décoratif */}
                 <div className="absolute top-[-20%] left-[-15%] w-[900px] h-[750px] bg-[#1e5138]/15 rounded-[240px] rotate-[-15deg] pointer-events-none z-0 mix-blend-multiply" />
                 <div className="absolute bottom-[-10%] right-[-12%] w-[800px] h-[600px] bg-[#1e5138]/20 rounded-[180px] rotate-[10deg] pointer-events-none z-0 mix-blend-multiply" />
 
@@ -142,7 +182,7 @@ export default function Step3BasicInfo() {
                     </div>
                 </div>
 
-                {/* Main Content */}
+                {/* Formulaire Principal */}
                 <main className="flex-grow flex items-center justify-center p-6 md:p-10 relative z-10">
                     <section className="w-full max-w-md flex flex-col gap-6">
                         <div>
@@ -161,7 +201,7 @@ export default function Step3BasicInfo() {
                         )}
 
                         <div className="flex flex-col gap-4">
-                            {/* Type de compte (Sélecteur de secours pour le Back) */}
+                            {/* Type de compte */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Type de compte</label>
                                 <div className="grid grid-cols-2 gap-2 bg-white/40 backdrop-blur-md p-1 rounded-2xl border border-white/40">
@@ -222,7 +262,7 @@ export default function Step3BasicInfo() {
                                 />
                             </div>
 
-                            {/* Téléphone */}
+                            {/* Téléphone (Togo +228) */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 pl-1">Téléphone <span className="text-[10px] text-gray-400 lowercase">(optionnel)</span></label>
                                 <div className="flex items-center rounded-2xl border border-white/40 bg-white/50 backdrop-blur-md overflow-hidden focus-within:bg-white focus-within:border-[#1e5138] transition-all">
@@ -297,7 +337,7 @@ export default function Step3BasicInfo() {
                             </div>
                         </div>
 
-                        {/* Navigation */}
+                        {/* Navigation Actions */}
                         <div className="flex items-center justify-between pt-4 mt-2">
                             <button
                                 type="button"
