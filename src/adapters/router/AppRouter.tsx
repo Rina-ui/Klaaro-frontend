@@ -11,6 +11,7 @@ import LoginPage from "../pages/auth/LoginPage.tsx";
 import PredictionsPage from "../pages/Prediction/PredictionPage.tsx";
 import PageAnimation from "../components/ui/PageAnimation.tsx";
 import Step3EnterpriseInfo from "../pages/onboarding/Step3EntrepriseBasicInfo.tsx";
+import SettingsPage from "../pages/setting/SettingsPage.tsx";
 
 export default function AppRouter() {
     return (
@@ -34,6 +35,8 @@ export default function AppRouter() {
                 <Route path="/dashboard" element={<PageAnimation><DashboardPage /></PageAnimation>} />
                 <Route path="/upload" element={<PageAnimation><UploadPage /></PageAnimation>} />
                 <Route path="/prediction" element={<PageAnimation><PredictionsPage /></PageAnimation>} />
+                <Route path="/setting" element={<PageAnimation><SettingsPage /></PageAnimation>} />
+
             </Routes>
         </BrowserRouter>
     )

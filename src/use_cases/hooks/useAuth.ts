@@ -4,6 +4,8 @@ const TOKEN_KEY = 'klaaro_token'
 const USER_KEY = 'klaaro_user'
 
 export interface UserProfile {
+    entreprise_name: string;
+    entreprise_id: string;
     id: string;
     firstname: string;
     lastname: string;

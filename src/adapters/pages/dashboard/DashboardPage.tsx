@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Bell, MessageSquare } from 'lucide-react'
+import { Search, Bell, MessageSquare, Building2 } from 'lucide-react'
 
 import { useDashboardData } from "../../../use_cases/hooks/useDashboard.ts";
 import { useAuth } from "../../../use_cases/hooks/useAuth.ts";
@@ -17,6 +17,10 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { topStats, recentFiles, recentActivity } = useDashboardData()
   const { user } = useAuth()
+
+  // Détection du statut d'entreprise (gérant ou membre)
+  const hasEnterprise = !!user?.entreprise_id;
+  const isAdminEnterprise = user?.account_type === 'ENTREPRISE' || user?.role === 'admin';
 
   return (
       <div className="min-h-screen bg-[#f8f9fa] text-[#1a1a1a] font-sans flex p-4 md:p-6 gap-0 overflow-hidden relative items-start">
@@ -42,10 +46,26 @@ export default function DashboardPage() {
           <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5 w-full">
             <div>
               <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden mb-2 text-sm bg-white px-3 py-1 rounded-md border border-gray-200 font-medium">Menu</button>
-              {/* 🔴 CORRECTION : Prénom dynamique */}
+
               <h1 className="text-xl font-bold tracking-tight">
                 Hello, {user?.firstname || 'Collaborateur'} !
               </h1>
+
+              {/*  Affichage dynamique de l'entreprise */}
+              {hasEnterprise ? (
+                  <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                    <Building2 size={12} className="text-emerald-700" />
+                    {isAdminEnterprise ? (
+                        <span>Espace Administrateur — <strong className="text-gray-800">{user?.entreprise_name || "Votre Entreprise"}</strong></span>
+                    ) : (
+                        <span>Membre de l'entreprise <strong className="text-gray-800">{user?.entreprise_name || "votre organisation"}</strong></span>
+                    )}
+                  </p>
+              ) : (
+                  <p className="text-xs text-gray-400 mt-0.5 italic">
+                    Compte Individuel
+                  </p>
+              )}
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto justify-end">

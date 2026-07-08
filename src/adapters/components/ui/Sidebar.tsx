@@ -64,12 +64,19 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
 
                         <div className="absolute bottom-[-20px] left-[-30px] w-40 h-48 bg-[#1e5138]/25 rounded-[50px] rotate-[12deg] pointer-events-none z-0 mix-blend-multiply" />
 
-                        <button className="relative z-10 p-3 text-gray-400 hover:text-black hover:bg-gray-50/80 backdrop-blur-sm rounded-full transition-colors cursor-pointer">
+                        <NavLink
+                            to="/setting"
+                            className={({ isActive }) => `relative z-10 p-3 rounded-full transition-colors cursor-pointer ${
+                                isActive ? 'bg-[#1a1a1a] text-white shadow-md' : 'text-gray-400 hover:text-black hover:bg-gray-50/80 backdrop-blur-sm'
+                            }`}
+                        >
                             <Settings size={20} />
-                        </button>
+                        </NavLink>
+
                         <button className="relative z-10 p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors cursor-pointer">
                             <LogOut size={20} />
                         </button>
+
                         <div className="relative z-10 w-10 h-10 rounded-full overflow-hidden border border-white shadow-sm mt-1">
                             <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="profile" className="w-full h-full object-cover" />
                         </div>
