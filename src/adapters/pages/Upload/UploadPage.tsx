@@ -15,13 +15,20 @@ export default function UploadPage(): React.JSX.Element {
         stats,
         analysis,
         globalVolume,
+        fileInputRef,
+        cameraInputRef,
         handleFileSelect,
-        handleStartScan
+        handleStartScan,
+        onFileChange,
+        refreshStats
     } = useUploadDashboard();
 
     return (
         <div className="w-full text-[#1a1a1a] font-sans p-4 md:p-8 antialiased flex flex-col items-center min-h-screen relative overflow-hidden">
-            {/* Arrière-plans décoratifs... */}
+            {/* Inputs natifs cachés pour l'ouverture des fenêtres de dialogue fichiers/caméra */}
+            <input type="file" ref={fileInputRef} onChange={(e) => onFileChange(e, false)} accept=".csv,.xlsx,.xls,.pdf,.json" className="hidden" />
+            <input type="file" ref={cameraInputRef} onChange={(e) => onFileChange(e, true)} accept="image/*" capture="environment" className="hidden" />
+
             <div className="absolute top-[-10%] right-[-15%] w-[750px] h-[700px] bg-[#1e5138]/15 rounded-[160px] rotate-[15deg] pointer-events-none z-0 mix-blend-multiply" />
             <div className="absolute bottom-[-15%] right-[-5%] w-[600px] h-[450px] bg-[#1e5138]/30 rounded-[100px] rotate-[-10deg] pointer-events-none z-0 mix-blend-multiply" />
             <div className="absolute top-[-5%] left-[-10%] w-[400px] h-[300px] bg-[#1e5138]/10 rounded-[80px] rotate-[-25deg] pointer-events-none z-0 mix-blend-multiply" />
@@ -65,13 +72,10 @@ export default function UploadPage(): React.JSX.Element {
                 </div>
             </div>
 
-            {/* Ajout du Modal à la fin de la page */}
             <ConnectDatabaseModal
                 isOpen={isDbModalOpen}
                 onClose={() => setIsDbModalOpen(false)}
-                onSuccess={() => {
-                    console.log("Configuration de la base externe ajoutée !");
-                }}
+                onSuccess={refreshStats}
             />
         </div>
     );

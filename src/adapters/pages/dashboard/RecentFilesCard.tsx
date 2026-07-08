@@ -1,11 +1,21 @@
-import { MoreVertical, FileText, Loader2 } from 'lucide-react'
-import { useGetRecentDocuments } from '../../../use_cases/hooks/useGetRecentDocuments.ts'
+import React from 'react';
+import { MoreVertical, FileText, Loader2 } from 'lucide-react';
+import { useGetRecentDocuments } from '../../../use_cases/hooks/useGetRecentDocuments.ts';
 
-export default function RecentFilesCard() {
+// Fonction utilitaire pour formater la taille dynamiquement
+const formatSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+};
+
+export default function RecentFilesCard(): React.JSX.Element {
     const { files, loading, error } = useGetRecentDocuments();
 
     return (
-        <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col h-[250px] shadow-sm">
+        <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col h-[250px] shadow-sm select-none">
             <div className="flex justify-between items-center mb-3 shrink-0">
                 <h3 className="font-bold text-[11px] uppercase tracking-wide text-gray-400">Fichiers récents</h3>
                 <a href="/documents" className="text-[10px] text-gray-400 hover:underline">Voir tout</a>
@@ -45,12 +55,13 @@ export default function RecentFilesCard() {
                                         <h4 className="text-[11px] font-semibold text-gray-800 truncate max-w-[150px]" title={file.name}>
                                             {file.name}
                                         </h4>
+                                        {/*file.taille au lieu de file.size + formatage */}
                                         <p className="text-[9px] text-gray-400">
-                                            {file.size}
+                                            {formatSize(file.taille)}
                                         </p>
                                     </div>
                                 </div>
-                                <button className="text-gray-400 hover:text-gray-600">
+                                <button className="text-gray-400 hover:text-gray-600 cursor-pointer">
                                     <MoreVertical size={14} />
                                 </button>
                             </div>
@@ -59,5 +70,5 @@ export default function RecentFilesCard() {
                 </div>
             )}
         </div>
-    )
+    );
 }
