@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth.ts";
 import { HttpDocumentRepository } from "../../infrastructure/api/HttpDocumentRepository.ts";
-import type {DocumentEntity} from "../../entities/Document.ts";
+import type { DocumentEntity } from "../../entities/Document.ts";
 
 const documentRepository = new HttpDocumentRepository();
 
 export function useGetRecentDocuments() {
-    const { user, token } = useAuth();
-    const [files, setFiles] = useState<DocumentEntity[]>([]); // 💡 Utilise DocumentEntity
+    const { token } = useAuth();
+    const [files, setFiles] = useState<DocumentEntity[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -15,15 +15,14 @@ export function useGetRecentDocuments() {
         let isMounted = true;
 
         async function loadDocuments() {
-            if (!user?.id || !token) return;
+            if (!token) return;
 
             try {
                 setLoading(true);
                 setError(null);
-                const fetchedDocuments = await documentRepository.getDocumentsByUserId(user.id, token);
+                const fetchedDocuments = await documentRepository.getRecentDocuments(token);
+
                 if (isMounted) {
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    // @ts-expect-error
                     setFiles(fetchedDocuments.slice(0, 5));
                 }
             } catch (err) {
@@ -40,7 +39,7 @@ export function useGetRecentDocuments() {
         return () => {
             isMounted = false;
         };
-    }, [user?.id, token]);
+    }, [token]);
 
     return { files, loading, error };
 }

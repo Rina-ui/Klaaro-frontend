@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "./useAuth.ts";
 import { HttpDocumentRepository } from "../../infrastructure/api/HttpDocumentRepository.ts";
-import type {UploadStats} from "../../entities/UploadStats.ts";
+import type { UploadStats } from "../../entities/UploadStats.ts";
 
 const docRepo = new HttpDocumentRepository();
 
@@ -27,18 +27,24 @@ export function useUploadDashboard() {
 
     const globalVolume = stats.uploadedFilesCount + stats.databaseConnectionsCount + stats.scannedPhotosCount;
 
-    const refreshStats = async () => {
+    // Encapsulé dans useCallback pour éviter les cascading renders du useEffect
+    const refreshStats = useCallback(async () => {
         if (user?.id && token) {
             try {
-                const data = await docRepo.getStatsByUserId(user.id, token);
+                const data = await docRepo.getStatsByUserId(token);
                 setStats(data);
             } catch (err) {
                 console.error(err);
             }
         }
-    };
+    }, [user?.id, token]);
 
-    useEffect(() => { refreshStats(); }, [user?.id, token]);
+    // Appel propre sans warning exhaustive-deps
+    useEffect(() => {
+        if (token) {
+            refreshStats();
+        }
+    }, [token, refreshStats]);
 
     const processUpload = async (file: File, isImage: boolean) => {
         if (!user?.id || !token) return;
@@ -54,21 +60,34 @@ export function useUploadDashboard() {
         reader.onloadend = async () => {
             try {
                 const base64Content = reader.result as string;
+                const lowerName = file.name.toLowerCase();
 
-                let docType = 'json';
-                if (isImage) docType = 'image';
-                else if (file.name.endsWith('.csv')) docType = 'csv';
-                else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) docType = 'excel';
-                else if (file.name.endsWith('.pdf')) docType = 'pdf';
+                // Aligné sur le type strict attendu par le payload du repository
+                let docType: 'csv' | 'excel' | 'json' | 'pdf' | 'xml' | 'image' = 'json';
 
-                setAnalysis(prev => ({ ...prev, progressPercentage: 40, steps: { ...prev.steps, ocr: 'completed', categorization: 'processing' } }));
+                if (isImage) {
+                    docType = 'image';
+                } else if (lowerName.endsWith('.csv')) {
+                    docType = 'csv';
+                } else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
+                    docType = 'excel';
+                } else if (lowerName.endsWith('.pdf')) {
+                    docType = 'pdf';
+                } else if (lowerName.endsWith('.xml')) {
+                    docType = 'xml';
+                }
+
+                setAnalysis(prev => ({
+                    ...prev,
+                    progressPercentage: 40,
+                    steps: { ...prev.steps, ocr: 'completed', categorization: 'processing' }
+                }));
 
                 await docRepo.uploadDocument({
                     name: file.name,
-                    type: docType as any,
+                    type: docType,
                     taille: file.size,
-                    content: base64Content,
-                    user_id: user.id
+                    content: base64Content
                 }, token);
 
                 setAnalysis(prev => ({

@@ -18,6 +18,11 @@ export interface UploadStats {
 }
 
 export interface DocumentRepository {
-    uploadDocument(doc: DocumentUploadData, token: string): Promise<any>;
+    uploadDocument(doc: {
+        name: string;
+        type: "csv" | "excel" | "json" | "pdf" | "xml" | "image";
+        taille: number;
+        content: string
+    }, token: string): Promise<any>;
     getStatsByUserId(userId: string, token: string): Promise<UploadStats>;
 }

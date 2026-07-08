@@ -1,75 +1,69 @@
-import type { DocumentRepository, DocumentUploadData } from "../../domain/repositories/DocumentRepository.ts";
 import type { UploadStats } from "../../entities/UploadStats.ts";
-import type {DocumentEntity} from "../../entities/Document.ts";
+import type { DocumentEntity } from "../../entities/Document.ts";
 
-//reponse envoyee au back
-interface DocumentBackendResponse {
-    id: string;
+export interface UploadDocumentPayload {
     name: string;
     type: 'csv' | 'excel' | 'json' | 'pdf' | 'xml' | 'image';
     taille: number;
     content: string;
-    user_id: string;
 }
 
-export class HttpDocumentRepository implements DocumentRepository {
+export class HttpDocumentRepository {
     private baseUrl = "http://127.0.0.1:8000";
 
-    async uploadDocument(doc: DocumentUploadData, token: string): Promise<DocumentBackendResponse> {
+    // Récupération des documents récents filtrés automatiquement par le Token JWT
+    async getRecentDocuments(token: string): Promise<DocumentEntity[]> {
         const response = await fetch(`${this.baseUrl}/documents/`, {
-            method: 'POST',
+            method: "GET",
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(doc)
-        });
-        if (!response.ok) throw new Error("Échec du téléversement du document.");
-
-        return response.json() as Promise<DocumentBackendResponse>;
-    }
-
-    async getDocumentsByUserId(userId: string, token: string): Promise<DocumentEntity[]> {
-        const response = await fetch(`${this.baseUrl}/documents/${userId}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
             }
         });
 
         if (!response.ok) {
-            throw new Error("Impossible de récupérer les documents de l'utilisateur.");
+            throw new Error("Impossible de charger les documents récents.");
         }
 
         const data = await response.json();
-        //  Typage explicite du tableau pour remplacer le "any"
-        const rawDocuments = (Array.isArray(data) ? data : [data]) as DocumentBackendResponse[];
-
-        // Plus aucun "any" ici, TypeScript connaît le type de chaque 'doc'
-        return rawDocuments.map((doc: DocumentBackendResponse): DocumentEntity => ({
-            id: doc.id,
-            name: doc.name,
-            type: doc.type,
-            taille: doc.taille,
-            content: doc.content,
-            user_id: doc.user_id
-        }));
+        return data as DocumentEntity[];
     }
 
-    async getStatsByUserId(userId: string, token: string): Promise<UploadStats> {
-        try {
-            const documents = await this.getDocumentsByUserId(userId, token);
+    // Aligné sur la méthode clean (sans argument userId inutilisé pour corriger TS6133)
+    async getDocumentsByUserId(token: string): Promise<DocumentEntity[]> {
+        return this.getRecentDocuments(token);
+    }
 
-            return {
-                uploadedFilesCount: documents.filter(d => d.type !== 'image').length,
-                uploadedFilesTrend: documents.length,
-                databaseConnectionsCount: 1,
-                scannedPhotosCount: documents.filter(d => d.type === 'image').length,
-                scannedPhotosMax: 50
-            };
-        } catch (err) {
-            throw new Error("Erreur lors du calcul des statistiques.", { cause: err });
+    // Récupération des statistiques du tableau de bord
+    async getStatsByUserId(token: string): Promise<UploadStats> {
+        const response = await fetch(`${this.baseUrl}/documents/stats`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error("Impossible de récupérer les statistiques.");
+        }
+
+        return await response.json();
+    }
+
+    // Envoi d'un nouveau document - Remplacement du type générique par UploadDocumentPayload
+    async uploadDocument(payload: UploadDocumentPayload, token: string): Promise<void> {
+        const response = await fetch(`${this.baseUrl}/documents/`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error("Échec du téléversement du document.");
         }
     }
 }
