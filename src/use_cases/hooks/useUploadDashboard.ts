@@ -5,10 +5,37 @@ import type { UploadStats } from "../../entities/UploadStats.ts";
 
 const docRepo = new HttpDocumentRepository();
 
+// --- INTERFACES POUR LE PRETRAITEMENT ML ---
+export interface PreprocessRapport {
+    lignes_avant: number;
+    lignes_apres: number;
+    colonnes_avant: string[];
+    colonnes_apres: string[];
+    actions: string[];
+}
+
+export interface ChartDataItem {
+    name: string;
+    valeur: number;
+}
+
+export interface PreprocessResponse {
+    status: string;
+    format_origine: string;
+    rapport: PreprocessRapport;
+    chart_data: ChartDataItem[];
+    apercu_donnees: Array<Record<string, any>>;
+}
+
 export function useUploadDashboard() {
     const { user, token } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
+
+    // États Klaaro ML
+    const [analysisResult, setAnalysisResult] = useState<PreprocessResponse | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState<boolean>(false);
 
     const [stats, setStats] = useState<UploadStats>({
         uploadedFilesCount: 0,
@@ -27,27 +54,70 @@ export function useUploadDashboard() {
 
     const globalVolume = stats.uploadedFilesCount + stats.databaseConnectionsCount + stats.scannedPhotosCount;
 
-    // Encapsulé dans useCallback pour éviter les cascading renders du useEffect
     const refreshStats = useCallback(async () => {
         if (user?.id && token) {
             try {
                 const data = await docRepo.getStatsByUserId(token);
                 setStats(data);
             } catch (err) {
-                console.error(err);
+                console.error("Erreur stats (Vérifie la méthode HTTP/URL sur le backend):", err);
             }
         }
     }, [user?.id, token]);
 
-    // Appel propre sans warning exhaustive-deps
     useEffect(() => {
         if (token) {
             refreshStats();
         }
     }, [token, refreshStats]);
 
+    // Fonction isolée pour gérer proprement l'envoi au DocumentRepository historique
+    const saveToDocumentRepository = (file: File, isImage: boolean): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onloadend = async () => {
+                try {
+                    const base64Content = reader.result as string;
+                    const lowerName = file.name.toLowerCase();
+
+                    let docType: 'csv' | 'excel' | 'json' | 'pdf' | 'xml' | 'image' = 'json';
+                    if (isImage) docType = 'image';
+                    else if (lowerName.endsWith('.csv')) docType = 'csv';
+                    else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) docType = 'excel';
+                    else if (lowerName.endsWith('.pdf')) docType = 'pdf';
+                    else if (lowerName.endsWith('.xml')) docType = 'xml';
+
+                    setAnalysis(prev => ({
+                        ...prev,
+                        progressPercentage: 60,
+                        steps: { ...prev.steps, ocr: 'completed', categorization: 'processing' }
+                    }));
+
+                    await docRepo.uploadDocument({
+                        name: file.name,
+                        type: docType,
+                        taille: file.size,
+                        content: base64Content
+                    }, token!);
+
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            };
+
+            reader.onerror = () => reject(new Error("Erreur lors de la lecture locale du fichier."));
+            reader.readAsDataURL(file);
+        });
+    };
+
     const processUpload = async (file: File, isImage: boolean) => {
         if (!user?.id || !token) return;
+
+        setIsUploading(true);
+        setUploadError(null);
+        setAnalysisResult(null);
 
         setAnalysis({
             fileName: file.name,
@@ -56,53 +126,65 @@ export function useUploadDashboard() {
             steps: { ocr: isImage ? 'processing' : 'completed', categorization: 'idle', fiscalImpact: 'idle' }
         });
 
-        const reader = new FileReader();
-        reader.onloadend = async () => {
+        //ÉTAPE 1 : Appel & Validation ML de l'API FastAPI
+        if (!isImage) {
             try {
-                const base64Content = reader.result as string;
-                const lowerName = file.name.toLowerCase();
+                const formData = new FormData();
+                formData.append('file', file);
 
-                // Aligné sur le type strict attendu par le payload du repository
-                let docType: 'csv' | 'excel' | 'json' | 'pdf' | 'xml' | 'image' = 'json';
+                const response = await fetch('http://localhost:8000/ml/preprocess', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
 
-                if (isImage) {
-                    docType = 'image';
-                } else if (lowerName.endsWith('.csv')) {
-                    docType = 'csv';
-                } else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
-                    docType = 'excel';
-                } else if (lowerName.endsWith('.pdf')) {
-                    docType = 'pdf';
-                } else if (lowerName.endsWith('.xml')) {
-                    docType = 'xml';
+                // Si l'application FastAPI renvoie un 404 (Route manquante)
+                if (response.status === 404) {
+                    throw new Error("L'URL /ml/preprocess n'est pas trouvée. Vérifie l'inclusion de ml_router dans ton main.py.");
                 }
 
-                setAnalysis(prev => ({
-                    ...prev,
-                    progressPercentage: 40,
-                    steps: { ...prev.steps, ocr: 'completed', categorization: 'processing' }
-                }));
+                const mlData = await response.json();
 
-                await docRepo.uploadDocument({
-                    name: file.name,
-                    type: docType,
-                    taille: file.size,
-                    content: base64Content
-                }, token);
+                if (!response.ok) {
+                    throw new Error(mlData.detail || "Le document a été refusé par l'analyseur.");
+                }
+
+                setAnalysisResult(mlData as PreprocessResponse);
 
                 setAnalysis(prev => ({
                     ...prev,
-                    progressPercentage: 100,
-                    steps: { ocr: 'completed', categorization: 'completed', fiscalImpact: 'processing' }
+                    progressPercentage: 40
                 }));
 
-                await refreshStats();
-            } catch (error) {
-                console.error(error);
-                setAnalysis(prev => ({ ...prev, fileName: "Erreur lors du traitement" }));
+            } catch (err: any) {
+                const errMsg = err.message || "Erreur lors du traitement ML.";
+                setUploadError(errMsg);
+                setAnalysis(prev => ({ ...prev, fileName: "Fichier refusé/Erreur API" }));
+                setIsUploading(false);
+                return;
             }
-        };
-        reader.readAsDataURL(file);
+        }
+
+        // ÉTAPE 2 : Sauvegarde dans ta DB (uniquement si l'étape 1 a réussi ou si c'est une image)
+        try {
+            await saveToDocumentRepository(file, isImage);
+
+            setAnalysis(prev => ({
+                ...prev,
+                progressPercentage: 100,
+                steps: { ocr: 'completed', categorization: 'completed', fiscalImpact: 'processing' }
+            }));
+
+            await refreshStats();
+        } catch (error) {
+            console.error(error);
+            setUploadError("Fichier validé par le ML, mais échec de la synchronisation de stockage interne.");
+            setAnalysis(prev => ({ ...prev, fileName: "Erreur sauvegarde DB" }));
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return {
@@ -111,6 +193,9 @@ export function useUploadDashboard() {
         globalVolume,
         fileInputRef,
         cameraInputRef,
+        analysisResult,
+        uploadError,
+        isUploading,
         handleFileSelect: () => fileInputRef.current?.click(),
         handleStartScan: () => cameraInputRef.current?.click(),
         onFileChange: (e: React.ChangeEvent<HTMLInputElement>, isImage: boolean) => {
