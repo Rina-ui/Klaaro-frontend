@@ -2,10 +2,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "./useAuth.ts";
 import { HttpDocumentRepository } from "../../infrastructure/api/HttpDocumentRepository.ts";
 import type { UploadStats } from "../../entities/UploadStats.ts";
+import type { DocumentEntity } from "../../entities/Document.ts"; // Ajuste le chemin selon ton entité
 
 const docRepo = new HttpDocumentRepository();
 
-// --- INTERFACES POUR LE PRETRAITEMENT ML ---
 export interface PreprocessRapport {
     lignes_avant: number;
     lignes_apres: number;
@@ -37,6 +37,9 @@ export function useUploadDashboard() {
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState<boolean>(false);
 
+    // 📋 NOUVEAU : État pour stocker l'historique des documents
+    const [recentDocuments, setRecentDocuments] = useState<DocumentEntity[]>([]);
+
     const [stats, setStats] = useState<UploadStats>({
         uploadedFilesCount: 0,
         uploadedFilesTrend: 0,
@@ -54,6 +57,18 @@ export function useUploadDashboard() {
 
     const globalVolume = stats.uploadedFilesCount + stats.databaseConnectionsCount + stats.scannedPhotosCount;
 
+    // 📋 NOUVEAU : Récupération isolée des documents récents depuis la DB
+    const loadRecentDocuments = useCallback(async () => {
+        if (token) {
+            try {
+                const docs = await docRepo.getRecentDocuments(token);
+                setRecentDocuments(docs);
+            } catch (err) {
+                console.error("Erreur lors de la récupération des documents récents :", err);
+            }
+        }
+    }, [token]);
+
     const refreshStats = useCallback(async () => {
         if (user?.id && token) {
             try {
@@ -65,13 +80,14 @@ export function useUploadDashboard() {
         }
     }, [user?.id, token]);
 
+    // Initialisation au chargement du composant
     useEffect(() => {
         if (token) {
             refreshStats();
+            loadRecentDocuments(); // 👈 Charger l'historique direct au montage
         }
-    }, [token, refreshStats]);
+    }, [token, refreshStats, loadRecentDocuments]);
 
-    // Fonction isolée pour gérer proprement l'envoi au DocumentRepository historique
     const saveToDocumentRepository = (file: File, isImage: boolean): Promise<void> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -94,6 +110,8 @@ export function useUploadDashboard() {
                         steps: { ...prev.steps, ocr: 'completed', categorization: 'processing' }
                     }));
 
+                    // Optionnel : Tu peux injecter la réponse de l'analyse ML dans le payload
+                    // si tu veux sauvegarder le rapport calculé en base de données.
                     await docRepo.uploadDocument({
                         name: file.name,
                         type: docType,
@@ -126,7 +144,7 @@ export function useUploadDashboard() {
             steps: { ocr: isImage ? 'processing' : 'completed', categorization: 'idle', fiscalImpact: 'idle' }
         });
 
-        //ÉTAPE 1 : Appel & Validation ML de l'API FastAPI
+        // ÉTAPE 1 : Appel & Validation ML de l'API FastAPI
         if (!isImage) {
             try {
                 const formData = new FormData();
@@ -140,7 +158,6 @@ export function useUploadDashboard() {
                     }
                 });
 
-                // Si l'application FastAPI renvoie un 404 (Route manquante)
                 if (response.status === 404) {
                     throw new Error("L'URL /ml/preprocess n'est pas trouvée. Vérifie l'inclusion de ml_router dans ton main.py.");
                 }
@@ -177,7 +194,9 @@ export function useUploadDashboard() {
                 steps: { ocr: 'completed', categorization: 'completed', fiscalImpact: 'processing' }
             }));
 
+            // Mettre à jour les stats et la liste après un nouvel ajout
             await refreshStats();
+            await loadRecentDocuments();
         } catch (error) {
             console.error(error);
             setUploadError("Fichier validé par le ML, mais échec de la synchronisation de stockage interne.");
@@ -194,6 +213,8 @@ export function useUploadDashboard() {
         fileInputRef,
         cameraInputRef,
         analysisResult,
+        setAnalysisResult,
+        recentDocuments,
         uploadError,
         isUploading,
         handleFileSelect: () => fileInputRef.current?.click(),
