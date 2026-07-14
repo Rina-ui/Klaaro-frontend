@@ -1,17 +1,37 @@
 import { ChevronDown } from 'lucide-react'
 
-export default function PredictionChart() {
+interface Props {
+    data: { date: string; count: number }[]
+}
+
+export default function PredictionChart({ data }: Props) {
+    const max = Math.max(...data.map(d => d.count), 1);
+    const hasActivity = data.some(d => d.count > 0);
+
     return (
         <div className="bg-white p-4 rounded-xl border border-gray-100 lg:col-span-2 flex flex-col justify-between">
             <div className="flex justify-between items-center mb-1">
-                <h3 className="font-bold text-xs uppercase tracking-wider text-gray-400">Évolution des prédictions</h3>
+                <h3 className="font-bold text-xs uppercase tracking-wider text-gray-400">Volume de fichiers (7 jours)</h3>
                 <button className="text-[10px] border border-gray-100 px-2 py-0.5 rounded bg-white"><ChevronDown size={10} /></button>
             </div>
-            <div className="h-28 w-full flex items-end relative">
-                <svg className="w-full h-full stroke-emerald-600 fill-emerald-50/10" viewBox="0 0 100 30" preserveAspectRatio="none">
-                    <path d="M0,25 Q15,15 25,22 T50,12 T75,18 T100,5 L100,30 L0,30 Z" strokeWidth="0.5" />
-                    <path d="M0,25 Q15,15 25,22 T50,12 T75,18 T100,5" strokeWidth="1" fill="none" />
-                </svg>
+            <div className="h-28 w-full flex items-end gap-2 mt-2">
+                {hasActivity ? (
+                    data.map((d) => (
+                        <div key={d.date} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                            <div
+                                className="w-full bg-[#1e5138] rounded-t transition-all"
+                                style={{ height: `${(d.count / max) * 100}%`, minHeight: d.count > 0 ? 4 : 1 }}
+                            />
+                            <span className="text-[8px] text-gray-400">
+                                {new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'short' })}
+                            </span>
+                        </div>
+                    ))
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-medium">
+                        Aucun fichier importé cette semaine
+                    </div>
+                )}
             </div>
         </div>
     )

@@ -1,8 +1,8 @@
 import React from 'react';
 import { MoreVertical, FileText, Loader2 } from 'lucide-react';
 import { useGetRecentDocuments } from '../../../use_cases/hooks/useGetRecentDocuments.ts';
+import { formatRelativeDate } from '../../../use_cases/utils/formatRelativeDate.ts';
 
-// Fonction utilitaire pour formater la taille dynamiquement
 const formatSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -18,10 +18,9 @@ export default function RecentFilesCard(): React.JSX.Element {
         <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col h-[250px] shadow-sm select-none">
             <div className="flex justify-between items-center mb-3 shrink-0">
                 <h3 className="font-bold text-[11px] uppercase tracking-wide text-gray-400">Fichiers récents</h3>
-                <a href="/documents" className="text-[10px] text-gray-400 hover:underline">Voir tout</a>
+                <a href="/upload" className="text-[10px] text-gray-400 hover:underline">Voir tout</a>
             </div>
 
-            {/* Loading State */}
             {loading && (
                 <div className="flex-1 flex flex-col items-center justify-center gap-2 text-gray-400">
                     <Loader2 size={18} className="animate-spin text-[#1e5138]" />
@@ -29,7 +28,6 @@ export default function RecentFilesCard(): React.JSX.Element {
                 </div>
             )}
 
-            {/* Error State */}
             {!loading && error && (
                 <div className="flex-1 flex items-center justify-center text-center p-2">
                     <span className="text-[10px] font-semibold text-red-500 bg-red-50 p-2 rounded-xl">
@@ -38,7 +36,6 @@ export default function RecentFilesCard(): React.JSX.Element {
                 </div>
             )}
 
-            {/* Documents List */}
             {!loading && !error && (
                 <div className="flex-1 overflow-y-auto pr-0.5 space-y-1 scrollbar-thin">
                     {files.length === 0 ? (
@@ -55,9 +52,8 @@ export default function RecentFilesCard(): React.JSX.Element {
                                         <h4 className="text-[11px] font-semibold text-gray-800 truncate max-w-[150px]" title={file.name}>
                                             {file.name}
                                         </h4>
-                                        {/*file.taille au lieu de file.size + formatage */}
                                         <p className="text-[9px] text-gray-400">
-                                            {formatSize(file.taille)}
+                                            {formatSize(file.taille)} · {formatRelativeDate(file.upload_date)}
                                         </p>
                                     </div>
                                 </div>

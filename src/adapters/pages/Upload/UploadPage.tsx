@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { UploadCloud, Link2, Camera, AlertTriangle, FileText, BarChart3, Clock, Eye } from 'lucide-react';
+import React from 'react';
+import { UploadCloud, Link2, Camera, AlertTriangle, FileText, BarChart3, Clock } from 'lucide-react';
 import { useUploadDashboard } from "../../../use_cases/hooks/useUploadDashboard.ts";
+import { useLocalStorageState } from "../../../use_cases/hooks/useLocalStorageState.ts";
+import { formatRelativeDate } from "../../../use_cases/utils/formatRelativeDate.ts";
 import NavigationTabs from "../../components/ui/NavigationTabs.tsx";
 import UploadStatsSection from "./UploadStatsSection.tsx";
 import UploadActionCard from "./UploadActionCard.tsx";
@@ -9,8 +11,10 @@ import ConnectDatabaseModal from "./ConnectDatabaseModal.tsx";
 import PreprocessResultSection from "./PreprocessResultSection.tsx";
 
 export default function UploadPage(): React.JSX.Element {
-    const [isDbModalOpen, setIsDbModalOpen] = useState(false);
-    const [activeSubTab, setActiveSubTab] = useState<'import' | 'analysis'>('import');
+    const [isDbModalOpen, setIsDbModalOpen] = React.useState(false);
+
+    // Persisté : survit à la navigation entre pages et au refresh
+    const [activeSubTab, setActiveSubTab] = useLocalStorageState<'import' | 'analysis'>('klaaro_upload_active_tab', 'import');
 
     const {
         stats,
@@ -23,7 +27,6 @@ export default function UploadPage(): React.JSX.Element {
         onFileChange,
         refreshStats,
         analysisResult,
-        setAnalysisResult,
         recentDocuments = [],
         uploadError,
         isUploading
@@ -33,34 +36,14 @@ export default function UploadPage(): React.JSX.Element {
         if (analysisResult) {
             setActiveSubTab('analysis');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [analysisResult]);
-
-    const handleViewPastAnalysis = (doc: any) => {
-        if (doc.content) {
-            try {
-                const parsedAnalysis = typeof doc.content === 'string' ? JSON.parse(doc.content) : doc.content;
-                setAnalysisResult(parsedAnalysis);
-                setActiveSubTab('analysis');
-            } catch (e) {
-                setAnalysisResult({
-                    status: "success",
-                    format_origine: doc.type,
-                    chart_type: "bar",
-                    chart_data: [],
-                    apercu_donnees: [],
-                    rapport: { lignes_avant: 0, lignes_apres: 0, colonnes_avant: [], colonnes_apres: [], actions: ["Fichier historique standard"] }
-                });
-                setActiveSubTab('analysis');
-            }
-        }
-    };
 
     return (
         <div className="w-full text-[#1a1a1a] font-sans p-4 md:p-8 antialiased flex flex-col items-center min-h-screen relative overflow-hidden">
             <input type="file" ref={fileInputRef} onChange={(e) => onFileChange(e, false)} accept=".csv,.xlsx,.xls,.pdf,.json" className="hidden" />
             <input type="file" ref={cameraInputRef} onChange={(e) => onFileChange(e, true)} accept="image/*" capture="environment" className="hidden" />
 
-            {/* Arrière-plans décoratifs */}
             <div className="absolute top-[-10%] right-[-15%] w-[750px] h-[700px] bg-[#1e5138]/15 rounded-[160px] rotate-[15deg] pointer-events-none z-0 mix-blend-multiply" />
             <div className="absolute bottom-[-15%] right-[-5%] w-[600px] h-[450px] bg-[#1e5138]/30 rounded-[100px] rotate-[-10deg] pointer-events-none z-0 mix-blend-multiply" />
 
@@ -112,15 +95,11 @@ export default function UploadPage(): React.JSX.Element {
                     </div>
                 )}
 
-                {/* AFFICHAGE DU CONTENU */}
                 {activeSubTab === 'import' ? (
-                    /* 🛠️ DISPOSITION EN DEUX COLONNES (Dashboard Layout) */
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full items-start animate-fade-in">
 
-                        {/* COLONNE DE GAUCHE : ACTIONS ET HISTORIQUE (Prend 2 colonnes sur 3 sur grand écran) */}
                         <div className="lg:col-span-2 flex flex-col gap-6 w-full">
 
-                            {/* Grille interne pour les 3 cartes d'actions */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <UploadActionCard
                                     title="Fichier (CSV/Excel)"
@@ -147,7 +126,6 @@ export default function UploadPage(): React.JSX.Element {
                                 />
                             </div>
 
-                            {/* Tableau de l'historique récents */}
                             <div className="w-full bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                                 <div className="flex items-center gap-2 mb-4">
                                     <Clock className="w-4 h-4 text-gray-500" />
@@ -158,42 +136,36 @@ export default function UploadPage(): React.JSX.Element {
                                     <p className="text-xs text-gray-400 italic py-2">Aucun document traité pour le moment.</p>
                                 ) : (
                                     <div className="overflow-x-auto w-full">
-                                        <table className="w-full text-left border-collapse min-w-[450px]">
+                                        <table className="w-full text-left border-collapse min-w-[500px]">
                                             <thead>
                                             <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                                                 <th className="pb-3 w-1/2">Nom du fichier</th>
                                                 <th className="pb-3">Format</th>
+                                                <th className="pb-3">Date</th>
                                                 <th className="pb-3">Taille</th>
-                                                <th className="pb-3 text-right">Actions</th>
                                             </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-50">
-                                            {recentDocuments.map((doc: any, idx: number) => (
+                                            {recentDocuments.map((doc, idx) => (
                                                 <tr key={doc.id || idx} className="hover:bg-gray-50/60 transition-colors">
                                                     <td className="py-3 px-1">
                                                         <div className="flex items-center gap-3">
                                                             <FileText className="w-4 h-4 text-[#1e5138] flex-shrink-0" />
                                                             <span className="text-xs font-semibold text-gray-700 truncate max-w-[180px] md:max-w-[280px]">
-                                                                    {doc.name}
-                                                                </span>
+                                                                {doc.name}
+                                                            </span>
                                                         </div>
                                                     </td>
                                                     <td className="py-3">
-                                                            <span className="text-[10px] font-bold text-gray-500 uppercase bg-gray-100 px-2 py-0.5 rounded-md">
-                                                                {doc.type}
-                                                            </span>
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase bg-gray-100 px-2 py-0.5 rounded-md">
+                                                            {doc.type}
+                                                        </span>
                                                     </td>
                                                     <td className="py-3 text-xs text-gray-500 font-medium">
-                                                        {((doc.taille || doc.size || 0) / 1024).toFixed(1)} KB
+                                                        {formatRelativeDate(doc.upload_date)}
                                                     </td>
-                                                    <td className="py-3 text-right">
-                                                        <button
-                                                            onClick={() => handleViewPastAnalysis(doc)}
-                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-[#1e5138]/5 hover:bg-[#1e5138]/10 text-[#1e5138] rounded-lg text-[11px] font-bold transition-all"
-                                                        >
-                                                            <Eye className="w-3 h-3" />
-                                                            Revoir
-                                                        </button>
+                                                    <td className="py-3 text-xs text-gray-500 font-medium">
+                                                        {((doc.taille || 0) / 1024).toFixed(1)} KB
                                                     </td>
                                                 </tr>
                                             ))}
@@ -201,17 +173,16 @@ export default function UploadPage(): React.JSX.Element {
                                         </table>
                                     </div>
                                 )}
+
                             </div>
                         </div>
 
-                        {/* COLONNE DE DROITE : PROGRESSION DE L'ANALYSE (Prend 1 colonne sur 3) */}
                         <div className="w-full lg:sticky lg:top-6">
                             <AnalysisProgressCard analysis={analysis} />
                         </div>
 
                     </div>
                 ) : (
-                    /* ONGLETS DES DONNÉES ANALYSÉES (Résultats plein écran) */
                     <div className="w-full mb-6 animate-fade-in">
                         {analysisResult ? (
                             <PreprocessResultSection result={analysisResult} />
@@ -220,7 +191,7 @@ export default function UploadPage(): React.JSX.Element {
                                 <FileText className="w-12 h-12 text-gray-300 mb-3" />
                                 <h3 className="text-sm font-bold text-gray-700">Aucune donnée disponible</h3>
                                 <p className="text-xs text-gray-400 mt-1 max-w-sm">
-                                    Veuillez d'abord téléverser ou lier un fichier dans l'onglet <strong>Importation</strong> ou en sélectionner un depuis l'historique ci-dessus.
+                                    Veuillez d'abord téléverser un fichier dans l'onglet <strong>Importation</strong>.
                                 </p>
                                 <button
                                     onClick={() => setActiveSubTab('import')}

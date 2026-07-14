@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUpRight, Plus } from 'lucide-react';
-import type {InsightReport} from "../../../entities/PredictionData.ts";
+import type { InsightReport } from "../../../entities/PredictionData.ts";
 
 interface InsightCardProps {
     insight: InsightReport;
@@ -9,15 +9,27 @@ interface InsightCardProps {
 }
 
 export default function InsightCard({ insight, onNewSimulation, onViewDetails }: InsightCardProps): React.JSX.Element {
+    const hasInsight = insight.percentage > 0;
+
     return (
         <div className="lg:col-start-10 lg:col-span-3 flex flex-col justify-between bg-[#1e5138] p-6 rounded-[32px] text-white shadow-md min-h-[350px]">
             <div>
                 <span className="text-xs font-bold text-emerald-200/70 tracking-wide flex items-center gap-1.5 mb-6">
                     <ArrowUpRight size={14} /> Insight IA
                 </span>
-                <p className="text-xs font-medium leading-relaxed text-emerald-50/90">
-                    "Vos revenus devraient augmenter de <span className="bg-emerald-500/40 text-emerald-200 px-1.5 py-0.5 rounded-md font-bold">{insight.percentage}%</span> le mois prochain grâce à la <span className="underline underline-offset-4 decoration-emerald-400/40 font-semibold">forte demande saisonnière</span> en produits frais."
-                </p>
+                {hasInsight ? (
+                    <p className="text-xs font-medium leading-relaxed text-emerald-50/90">
+                        Vos revenus devraient évoluer de{' '}
+                        <span className="bg-emerald-500/40 text-emerald-200 px-1.5 py-0.5 rounded-md font-bold">
+                            {insight.percentage}%
+                        </span>{' '}
+                        selon la dernière prédiction générée.
+                    </p>
+                ) : (
+                    <p className="text-xs font-medium leading-relaxed text-emerald-50/60">
+                        Lance une prédiction pour obtenir un insight personnalisé basé sur tes données.
+                    </p>
+                )}
             </div>
 
             <div className="flex flex-col gap-3">

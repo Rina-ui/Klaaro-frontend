@@ -15,17 +15,15 @@ import Sidebar from "../../components/ui/Sidebar.tsx";
 export default function DashboardPage() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { topStats, recentFiles, recentActivity } = useDashboardData()
+  const { summary, topStats, recentActivity, loading } = useDashboardData()
   const { user } = useAuth()
 
-  // Détection du statut d'entreprise (gérant ou membre)
   const hasEnterprise = !!user?.entreprise_id;
   const isAdminEnterprise = user?.account_type === 'ENTREPRISE' || user?.role === 'admin';
 
   return (
       <div className="min-h-screen bg-[#f8f9fa] text-[#1a1a1a] font-sans flex p-4 md:p-6 gap-0 overflow-hidden relative items-start">
 
-        {/* background */}
         <div className="absolute top-[-25%] right-[-15%] w-[900px] h-[600px] bg-[#1e5138]/20 rounded-[120px] rotate-[-12deg] pointer-events-none z-0 mix-blend-multiply" />
         <div className="absolute top-[-12%] right-[-5%] w-[550px] h-[450px] bg-[#1e5138]/40 rounded-[90px] rotate-[-22deg] pointer-events-none z-0 mix-blend-multiply" />
         <div className="absolute bottom-[-10%] left-[-8%] w-[650px] h-[450px] bg-[#1e5138]/20 rounded-[140px] rotate-[28deg] pointer-events-none z-0 mix-blend-multiply" />
@@ -51,7 +49,6 @@ export default function DashboardPage() {
                 Hello, {user?.firstname || 'Collaborateur'} !
               </h1>
 
-              {/*  Affichage dynamique de l'entreprise */}
               {hasEnterprise ? (
                   <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
                     <Building2 size={12} className="text-emerald-700" />
@@ -87,15 +84,23 @@ export default function DashboardPage() {
             </div>
           </header>
 
-          <TopStatsCards stats={topStats} />
+          {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="bg-white p-3.5 rounded-xl border border-gray-100 h-[75px] animate-pulse" />
+                ))}
+              </div>
+          ) : (
+              <TopStatsCards stats={topStats} />
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
-            <PredictionChart />
+            <PredictionChart data={summary?.uploadsByDay ?? []} />
             <WhatsAppCard />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <RecentFilesCard files={recentFiles} />
+            <RecentFilesCard />
             <RecentActivityCard activity={recentActivity} />
             <DataQualityCard />
             <ProfileCard />

@@ -1,28 +1,78 @@
-import { CheckCircle2, Cpu, UploadCloud, Database } from 'lucide-react'
-import type { StatCard, FileItem, ActivityItem } from '../../entities/Dashboard'
+import { useState, useEffect, useCallback } from 'react';
+import { BarChart3, TrendingUp, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useAuth } from './useAuth.ts';
+import { HttpDashboardRepository, type DashboardSummary, type DashboardActivityEntry } from '../../infrastructure/api/HttpDashboardRepository.ts';
+import { formatRelativeDate } from '../utils/formatRelativeDate.ts';
+import type { StatCard, ActivityItem } from '../../entities/Dashboard.ts';
+
+const dashboardRepo = new HttpDashboardRepository();
+
+function mapActivityToItem(entry: DashboardActivityEntry): ActivityItem {
+    switch (entry.kind) {
+        case 'alerte':
+            return {
+                type: 'alerte',
+                text: entry.text || 'Alerte',
+                sub: entry.sub,
+                time: formatRelativeDate(entry.date),
+                icon: AlertTriangle,
+                color: entry.niveau_gravite === 'high' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+            };
+        case 'rapport':
+            return {
+                type: 'rapport',
+                text: entry.text || 'Analyse',
+                sub: entry.sub,
+                time: formatRelativeDate(entry.date),
+                icon: entry.sub === 'prediction' ? TrendingUp : BarChart3,
+                color: 'bg-emerald-100 text-emerald-700'
+            };
+        case 'decision':
+        default:
+            return {
+                type: 'decision',
+                text: entry.text || 'Décision',
+                sub: entry.sub,
+                time: formatRelativeDate(entry.date),
+                icon: CheckCircle2,
+                color: 'bg-blue-100 text-blue-600'
+            };
+    }
+}
 
 export function useDashboardData() {
-    const topStats: StatCard[] = [
-        { title: "Fichiers uploadés", value: "48" },
-        { title: "Analyses réalisées", value: "173" },
-        { title: "Prédictions", value: "820" },
-        { title: "Earnings", value: "$682.50" },
-    ]
+    const { token } = useAuth();
+    const [summary, setSummary] = useState<DashboardSummary | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const recentFiles: FileItem[] = [
-        { name: "ventes_2024.csv", size: "2.4 Mo" },
-        { name: "clients.xlsx", size: "1.8 Mo" },
-        { name: "transactions.sql", size: "3.7 Mo" },
-        { name: "marketing_data.csv", size: "5.2 Mo" },
-        { name: "rapport_q2.xlsx", size: "4.1 Mo" },
-    ]
+    const refresh = useCallback(async () => {
+        if (!token) return;
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await dashboardRepo.getSummary(token);
+            setSummary(data);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Erreur lors du chargement du dashboard.");
+        } finally {
+            setLoading(false);
+        }
+    }, [token]);
 
-    const recentActivity: ActivityItem[] = [
-        { type: "analysis", text: "Analyse terminée", sub: "ventes_2024.csv", time: "5m", icon: CheckCircle2, color: "text-green-500 bg-green-50" },
-        { type: "prediction", text: "Prédiction générée", sub: "Modèle XGBoost", time: "15m", icon: Cpu, color: "text-blue-500 bg-blue-50" },
-        { type: "upload", text: "Fichier uploadé", sub: "marketing_data.csv", time: "1h", icon: UploadCloud, color: "text-purple-500 bg-purple-50" },
-        { type: "db", text: "Connexion DB réussie", sub: "PostgreSQL", time: "2h", icon: Database, color: "text-emerald-500 bg-emerald-50" },
-    ]
+    useEffect(() => {
+        refresh();
+    }, [refresh]);
 
-    return { topStats, recentFiles, recentActivity }
+    const topStats: StatCard[] = summary ? [
+        { title: "Fichiers uploadés", value: String(summary.uploadedFilesCount) },
+        { title: "Analyses réalisées", value: String(summary.analysesCount) },
+        { title: "Prédictions", value: String(summary.predictionsCount) },
+        { title: "Décisions", value: String(summary.decisionsCount) },
+        { title: "Alertes actives", value: String(summary.alertesCount) },
+    ] : [];
+
+    const recentActivity: ActivityItem[] = summary?.recentActivity.map(mapActivityToItem) ?? [];
+
+    return { summary, topStats, recentActivity, loading, error, refresh };
 }
