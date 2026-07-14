@@ -2,7 +2,9 @@ import React from 'react';
 import { UploadCloud, Link2, Camera, AlertTriangle, FileText, BarChart3, Clock } from 'lucide-react';
 import { useUploadDashboard } from "../../../use_cases/hooks/useUploadDashboard.ts";
 import { useLocalStorageState } from "../../../use_cases/hooks/useLocalStorageState.ts";
+import { useRapportHistory } from "../../../use_cases/hooks/useRapportHistory.ts";
 import { formatRelativeDate } from "../../../use_cases/utils/formatRelativeDate.ts";
+import RapportHistorySelect from "../../components/shared/RapportHistorySelect.tsx";
 import NavigationTabs from "../../components/ui/NavigationTabs.tsx";
 import UploadStatsSection from "./UploadStatsSection.tsx";
 import UploadActionCard from "./UploadActionCard.tsx";
@@ -27,14 +29,18 @@ export default function UploadPage(): React.JSX.Element {
         onFileChange,
         refreshStats,
         analysisResult,
+        loadRapport,
         recentDocuments = [],
         uploadError,
         isUploading
     } = useUploadDashboard();
 
+    const { history, loading: historyLoading, refresh: refreshHistory } = useRapportHistory('preprocessing');
+
     React.useEffect(() => {
         if (analysisResult) {
             setActiveSubTab('analysis');
+            refreshHistory();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [analysisResult]);
@@ -85,6 +91,13 @@ export default function UploadPage(): React.JSX.Element {
                     </div>
                 </header>
 
+                <RapportHistorySelect
+                    history={history}
+                    loading={historyLoading}
+                    onSelect={(rapport) => loadRapport(rapport.content)}
+                    label="Revoir une ancienne analyse..."
+                />
+
                 {uploadError && (
                     <div className="w-full mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl flex items-start gap-3 shadow-sm">
                         <AlertTriangle className="text-red-600 w-5 h-5 mt-0.5 flex-shrink-0" />
@@ -96,99 +109,94 @@ export default function UploadPage(): React.JSX.Element {
                 )}
 
                 {activeSubTab === 'import' ? (
-                    <div className="w-full flex flex-col gap-6 animate-fade-in">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full items-start animate-fade-in">
 
-                        {/* SECTION DES CARTES (2 en haut asymétriques, 2 au milieu asymétriques) */}
-                        <div className="flex flex-col gap-6 w-full">
+                        <div className="lg:col-span-2 flex flex-col gap-6 w-full">
 
-                            {/* LIGNE 1 : Fichier (60%) & Connexion (40%) */}
-                            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                                <div className="lg:col-span-3">
-                                    <UploadActionCard
-                                        title="Fichier (CSV/Excel)"
-                                        description="Glissez vos fichiers comptables ou exports de vente."
-                                        buttonText={isUploading ? "Analyse..." : "Sélectionner"}
-                                        icon={UploadCloud}
-                                        onClick={handleFileSelect}
-                                    />
-                                </div>
-                                <div className="lg:col-span-2">
-                                    <UploadActionCard
-                                        title="Connecter une source"
-                                        description="Synchronisation en temps réel avec vos ERP/Banques."
-                                        buttonText="Connecter"
-                                        icon={Link2}
-                                        onClick={() => setIsDbModalOpen(true)}
-                                    />
-                                </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <UploadActionCard
+                                    title="Fichier (CSV/Excel)"
+                                    description="Glissez vos fichiers comptables ou exports de vente."
+                                    buttonText={isUploading ? "Analyse..." : "Sélectionner"}
+                                    icon={UploadCloud}
+                                    onClick={handleFileSelect}
+                                />
+
+                                <UploadActionCard
+                                    title="Connecter une source"
+                                    description="Synchronisation en temps réel avec vos ERP/Banques."
+                                    buttonText="Connecter"
+                                    icon={Link2}
+                                    onClick={() => setIsDbModalOpen(true)}
+                                />
+
+                                <UploadActionCard
+                                    title="Photographier"
+                                    description="Scannez vos reçus et factures papier via l'OCR."
+                                    buttonText="Scanner"
+                                    icon={Camera}
+                                    onClick={handleStartScan}
+                                />
                             </div>
 
-                            {/* LIGNE 2 : Photographier (40%) & Analyse en cours (60%) */}
-                            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
-                                <div className="lg:col-span-2">
-                                    <UploadActionCard
-                                        title="Photographier"
-                                        description="Scannez vos reçus et factures papier via l'OCR."
-                                        buttonText="Scanner"
-                                        icon={Camera}
-                                        onClick={handleStartScan}
-                                    />
+                            <div className="w-full bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Clock className="w-4 h-4 text-gray-500" />
+                                    <h3 className="text-sm font-bold text-gray-900">Fichiers récents traités</h3>
                                 </div>
-                                <div className="lg:col-span-3 h-full">
-                                    <AnalysisProgressCard analysis={analysis} />
-                                </div>
-                            </div>
 
+                                {recentDocuments.length === 0 ? (
+                                    <p className="text-xs text-gray-400 italic py-2">Aucun document traité pour le moment.</p>
+                                ) : (
+                                    <div className="overflow-x-auto w-full">
+                                        <table className="w-full text-left border-collapse min-w-[500px]">
+                                            <thead>
+                                            <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                                <th className="pb-3 w-1/2">Nom du fichier</th>
+                                                <th className="pb-3">Format</th>
+                                                <th className="pb-3">Date</th>
+                                                <th className="pb-3">Taille</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-50">
+                                            {recentDocuments.map((doc, idx) => (
+                                                <tr key={doc.id || idx} className="hover:bg-gray-50/60 transition-colors">
+                                                    <td className="py-3 px-1">
+                                                        <div className="flex items-center gap-3">
+                                                            <FileText className="w-4 h-4 text-[#1e5138] flex-shrink-0" />
+                                                            <span className="text-xs font-semibold text-gray-700 truncate max-w-[180px] md:max-w-[280px]">
+                                                                {doc.name}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3">
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase bg-gray-100 px-2 py-0.5 rounded-md">
+                                                            {doc.type}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 text-xs text-gray-500 font-medium">
+                                                        {formatRelativeDate(doc.upload_date)}
+                                                    </td>
+                                                    <td className="py-3 text-xs text-gray-500 font-medium">
+                                                        {((doc.taille || 0) / 1024).toFixed(1)} KB
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                                {/* Note : le bouton "Revoir" a été retiré car il tentait de reparser le
+                                    contenu brut du fichier comme un résultat d'analyse — ça ne pouvait
+                                    jamais marcher. Pour lier une analyse précise à un document donné,
+                                    il faudrait ajouter un champ document_id sur l'entité Rapport côté
+                                    backend. En attendant, l'onglet "Données Analysées" affiche toujours
+                                    la dernière analyse générée (sauvegardée en base). */}
+                            </div>
                         </div>
 
-                        {/* LIGNE 3 : Tableau récent prenant toute la largeur de l'écran en bas */}
-                        <div className="w-full bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                            <div className="flex items-center gap-2 mb-4">
-                                <Clock className="w-4 h-4 text-gray-500" />
-                                <h3 className="text-sm font-bold text-gray-900">Fichiers récents traités</h3>
-                            </div>
-
-                            {recentDocuments.length === 0 ? (
-                                <p className="text-xs text-gray-400 italic py-2">Aucun document traité pour le moment.</p>
-                            ) : (
-                                <div className="overflow-x-auto w-full">
-                                    <table className="w-full text-left border-collapse min-w-[500px]">
-                                        <thead>
-                                        <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                            <th className="pb-3 w-1/2">Nom du fichier</th>
-                                            <th className="pb-3">Format</th>
-                                            <th className="pb-3">Date</th>
-                                            <th className="pb-3">Taille</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-50">
-                                        {recentDocuments.map((doc, idx) => (
-                                            <tr key={doc.id || idx} className="hover:bg-gray-50/60 transition-colors">
-                                                <td className="py-3 px-1">
-                                                    <div className="flex items-center gap-3">
-                                                        <FileText className="w-4 h-4 text-[#1e5138] flex-shrink-0" />
-                                                        <span className="text-xs font-semibold text-gray-700 truncate max-w-[180px] md:max-w-[280px]">
-                                                            {doc.name}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3">
-                                                    <span className="text-[10px] font-bold text-gray-500 uppercase bg-gray-100 px-2 py-0.5 rounded-md">
-                                                        {doc.type}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 text-xs text-gray-500 font-medium">
-                                                    {formatRelativeDate(doc.upload_date)}
-                                                </td>
-                                                <td className="py-3 text-xs text-gray-500 font-medium">
-                                                    {((doc.taille || 0) / 1024).toFixed(1)} KB
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
+                        <div className="w-full lg:sticky lg:top-6">
+                            <AnalysisProgressCard analysis={analysis} />
                         </div>
 
                     </div>

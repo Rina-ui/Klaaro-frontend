@@ -196,6 +196,20 @@ export function usePredictions() {
         alert(`Détails du Modèle :\nStatut: Connecté\nTarget: Variable temporelle adaptative\nServeur: FastAPI Engine`);
     };
 
+    // Recharge un rapport de type "prediction" choisi dans l'historique
+    const loadRapport = (content: string) => {
+        try {
+            const stored = JSON.parse(content) as StoredPredictionState;
+            setMetrics(stored.metrics);
+            setInsight(stored.insight);
+            setSummary(stored.summary);
+            setChartData(stored.chartData);
+            setLastGeneratedAt(stored.generatedAt);
+        } catch (err) {
+            console.error("Rapport de prédiction illisible :", err);
+        }
+    };
+
     return {
         metrics,
         insight,
@@ -206,6 +220,7 @@ export function usePredictions() {
         lastGeneratedAt,
         executePrediction,
         handleNewSimulation,
-        handleViewDetails
+        handleViewDetails,
+        loadRapport
     };
 }

@@ -250,6 +250,17 @@ export function useUploadDashboard() {
         }
     };
 
+    // Recharge un rapport de type "preprocessing" choisi dans l'historique
+    const loadRapport = (content: string) => {
+        try {
+            const stored = JSON.parse(content) as { result: PreprocessResponse; fileName: string };
+            setAnalysisResult(stored.result);
+            setLastAnalysisFileName(stored.fileName);
+        } catch (err) {
+            console.error("Rapport d'analyse illisible :", err);
+        }
+    };
+
     return {
         stats,
         analysis,
@@ -259,6 +270,7 @@ export function useUploadDashboard() {
         analysisResult,
         setAnalysisResult,
         lastAnalysisFileName,
+        loadRapport,
         recentDocuments,
         uploadError,
         isUploading,

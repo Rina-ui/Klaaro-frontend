@@ -16,9 +16,33 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
     const [columnsLoading, setColumnsLoading] = useState(false);
     const [columnsError, setColumnsError] = useState<string | null>(null);
 
-    // Dès qu'un fichier est choisi, on lit ses vraies colonnes (via /ml/preprocess,
-    // qui les renvoie déjà dans rapport.colonnes_apres) pour proposer un menu
-    // déroulant au lieu de faire deviner un nom de colonne à l'utilisateur.
+    // Dès qu'un fichier est choisi, on lit ses colonnes.
+    // Pour un CSV : lecture locale instantanée (juste la 1ère ligne), pas d'appel réseau.
+    // Pour un Excel : on n'a pas de lib de parsing xlsx côté front, donc on passe
+    // par /ml/preprocess en dernier recours (plus lent, mais rare en pratique).
+    const readCsvColumnsLocally = (file: File): Promise<string[]> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const text = reader.result as string;
+                    const firstLine = text.split(/\r?\n/)[0] ?? '';
+                    const delimiter = firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',';
+                    const columns = firstLine
+                        .split(delimiter)
+                        .map((c) => c.trim().replace(/^"|"$/g, ''))
+                        .filter(Boolean);
+                    columns.length ? resolve(columns) : reject(new Error("En-têtes introuvables."));
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            reader.onerror = () => reject(new Error("Impossible de lire le fichier."));
+            // On ne lit que les 64 premiers Ko : largement suffisant pour la 1ère ligne, beaucoup plus rapide sur un gros fichier
+            reader.readAsText(file.slice(0, 65536));
+        });
+    };
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -28,6 +52,21 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
         setTargetCol('');
         setColumnsError(null);
 
+        const isCsv = file.name.toLowerCase().endsWith('.csv');
+
+        if (isCsv) {
+            try {
+                const columns = await readCsvColumnsLocally(file);
+                setAvailableColumns(columns);
+                setTargetCol(columns[0]);
+            } catch (err) {
+                console.error("Erreur lors de la lecture locale des colonnes :", err);
+                setColumnsError("Impossible de lire les colonnes de ce fichier.");
+            }
+            return;
+        }
+
+        // Fichier Excel : pas de parsing local, on passe par le backend
         if (!token) return;
 
         setColumnsLoading(true);

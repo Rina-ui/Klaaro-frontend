@@ -1,11 +1,13 @@
 import React from 'react';
 import { usePredictions } from "../../../use_cases/hooks/usePrediction.ts";
+import { useRapportHistory } from "../../../use_cases/hooks/useRapportHistory.ts";
 import MetricGauges from "./MetricGauges.tsx";
 import PredictionChart from "./PredictionChart.tsx";
 import InsightCard from "./InsightCard.tsx";
 import SummaryCards from "./SummaryCards.tsx";
 import NavigationTabs from "../../components/ui/NavigationTabs.tsx";
 import PredictionConfigBar from "./PredictionConfigBar.tsx";
+import RapportHistorySelect from "../../components/shared/RapportHistorySelect.tsx";
 
 export default function PredictionsPage(): React.JSX.Element {
     const {
@@ -18,8 +20,17 @@ export default function PredictionsPage(): React.JSX.Element {
         lastGeneratedAt,
         executePrediction,
         handleNewSimulation,
-        handleViewDetails
+        handleViewDetails,
+        loadRapport
     } = usePredictions();
+
+    const { history, loading: historyLoading, refresh: refreshHistory } = useRapportHistory('prediction');
+
+    // Après une nouvelle prédiction réussie, on rafraîchit la liste pour qu'elle y apparaisse
+    React.useEffect(() => {
+        if (lastGeneratedAt) refreshHistory();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [lastGeneratedAt]);
 
     return (
         <div className="w-full text-[#1a1a1a] font-sans p-4 md:p-8 antialiased flex flex-col items-center min-h-screen relative overflow-hidden">
@@ -32,6 +43,13 @@ export default function PredictionsPage(): React.JSX.Element {
                 <NavigationTabs />
 
                 <MetricGauges metrics={metrics} />
+
+                <RapportHistorySelect
+                    history={history}
+                    loading={historyLoading}
+                    onSelect={(rapport) => loadRapport(rapport.content)}
+                    label="Revoir une ancienne prédiction..."
+                />
 
                 <PredictionConfigBar onPredict={executePrediction} loading={loading} />
 
