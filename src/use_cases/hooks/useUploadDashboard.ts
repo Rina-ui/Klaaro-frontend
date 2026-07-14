@@ -35,13 +35,15 @@ export function useUploadDashboard() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
 
-    // 🗄️ Cache instantané en localStorage : évite l'écran vide le temps que le
-    // GET /rapports/user/{id} réponde, et sert de filet de secours si jamais
-    // la sauvegarde backend échoue pour une raison ou une autre.
+    // États Klaaro ML — persistés en localStorage (cache instantané) ET en base
+    // via l'entité Rapport (type: "preprocessing"), pour survivre à la navigation,
+    // au refresh, et être réellement consultables plus tard depuis un autre appareil.
     const [analysisResult, setAnalysisResult] = useLocalStorageState<PreprocessResponse | null>('klaaro_last_analysis', null);
-
+    const [lastAnalysisFileName, setLastAnalysisFileName] = useLocalStorageState<string | null>('klaaro_last_analysis_filename', null);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState<boolean>(false);
+
+    // Historique des documents
     const [recentDocuments, setRecentDocuments] = useState<DocumentEntity[]>([]);
 
     const [stats, setStats] = useState<UploadStats>({
@@ -76,37 +78,58 @@ export function useUploadDashboard() {
         if (user?.id && token) {
             try {
                 const data = await docRepo.getStatsByUserId(token);
-                setStats(data);
+                setStats({
+                    uploadedFilesCount: data.uploadedFilesCount ?? 0,
+                    uploadedFilesTrend: data.uploadedFilesTrend ?? 0,
+                    databaseConnectionsCount: data.databaseConnectionsCount ?? 0,
+                    scannedPhotosCount: data.scannedPhotosCount ?? 0,
+                    scannedPhotosMax: data.scannedPhotosMax ?? 50
+                });
             } catch (err) {
                 console.error("Erreur stats (Vérifie la méthode HTTP/URL sur le backend):", err);
             }
         }
     }, [user?.id, token]);
 
-    // 🗄️ Récupère la dernière analyse sauvegardée en base au montage,
-    // pour réhydrater l'écran même après un changement de page complet
-    // (nouvel onglet, autre navigateur, etc. — pas seulement le cache local).
+    // 🗄️ Va chercher la dernière analyse sauvegardée en base au montage, pour ne
+    // pas dépendre uniquement du localStorage (donc ça marche aussi sur un autre
+    // appareil, ou après avoir vidé le cache du navigateur).
     const loadLatestAnalysis = useCallback(async () => {
         if (!user?.id || !token) return;
         try {
             const latest = await rapportRepo.getLatestRapportByType(token, user.id, 'preprocessing');
             if (latest) {
-                setAnalysisResult(JSON.parse(latest.content) as PreprocessResponse);
+                const stored = JSON.parse(latest.content) as { result: PreprocessResponse; fileName: string };
+                setAnalysisResult(stored.result);
+                setLastAnalysisFileName(stored.fileName);
             }
         } catch (err) {
             console.error("Impossible de recharger la dernière analyse depuis le backend :", err);
-            // On garde silencieusement ce qu'il y avait dans le cache localStorage
         }
-    }, [user?.id, token, setAnalysisResult]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id, token]);
 
+    const persistAnalysis = async (result: PreprocessResponse, fileName: string) => {
+        if (!token) return;
+        try {
+            await rapportRepo.createRapport({
+                type: 'preprocessing',
+                content: JSON.stringify({ result, fileName }),
+                periode: new Date().toISOString()
+            }, token);
+        } catch (err) {
+            console.error("Échec de la sauvegarde de l'analyse en base :", err);
+        }
+    };
+
+    // Initialisation au chargement du composant
     useEffect(() => {
         if (token) {
             refreshStats();
             loadRecentDocuments();
             loadLatestAnalysis();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token, refreshStats, loadRecentDocuments]);
+    }, [token, refreshStats, loadRecentDocuments, loadLatestAnalysis]);
 
     const saveToDocumentRepository = (file: File, isImage: boolean): Promise<void> => {
         return new Promise((resolve, reject) => {
@@ -148,29 +171,11 @@ export function useUploadDashboard() {
         });
     };
 
-    // 🗄️ Sauvegarde le résultat ML en base sous forme de Rapport, pour qu'il
-    // survive à la navigation, au refresh, et soit consultable depuis n'importe
-    // quel appareil connecté au même compte.
-    const persistAnalysisResult = async (result: PreprocessResponse) => {
-        if (!token) return;
-        try {
-            await rapportRepo.createRapport({
-                type: 'preprocessing',
-                content: JSON.stringify(result),
-                periode: new Date().toISOString()
-            }, token);
-        } catch (err) {
-            console.error("Échec de la sauvegarde du rapport d'analyse en base :", err);
-            // Non bloquant : l'utilisateur voit quand même son résultat (cache localStorage)
-        }
-    };
-
     const processUpload = async (file: File, isImage: boolean) => {
         if (!user?.id || !token) return;
 
         setIsUploading(true);
         setUploadError(null);
-        setAnalysisResult(null);
 
         setAnalysis({
             fileName: file.name,
@@ -179,6 +184,7 @@ export function useUploadDashboard() {
             steps: { ocr: isImage ? 'processing' : 'completed', categorization: 'idle', fiscalImpact: 'idle' }
         });
 
+        // ÉTAPE 1 : Appel & Validation ML de l'API FastAPI
         if (!isImage) {
             try {
                 const formData = new FormData();
@@ -187,7 +193,9 @@ export function useUploadDashboard() {
                 const response = await fetch('http://localhost:8000/ml/preprocess', {
                     method: 'POST',
                     body: formData,
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
 
                 if (response.status === 404) {
@@ -201,9 +209,16 @@ export function useUploadDashboard() {
                 }
 
                 setAnalysisResult(mlData as PreprocessResponse);
-                await persistAnalysisResult(mlData as PreprocessResponse);
+                setLastAnalysisFileName(file.name);
 
-                setAnalysis(prev => ({ ...prev, progressPercentage: 40 }));
+                setAnalysis(prev => ({
+                    ...prev,
+                    progressPercentage: 40
+                }));
+
+                // 🗄️ Sauvegarde en base pour survivre à la navigation, au refresh,
+                // et pour pouvoir "Revoir" une vraie ancienne analyse plus tard.
+                await persistAnalysis(mlData as PreprocessResponse, file.name);
 
             } catch (err: any) {
                 const errMsg = err.message || "Erreur lors du traitement ML.";
@@ -214,6 +229,7 @@ export function useUploadDashboard() {
             }
         }
 
+        // ÉTAPE 2 : Sauvegarde dans ta DB (uniquement si l'étape 1 a réussi ou si c'est une image)
         try {
             await saveToDocumentRepository(file, isImage);
 
@@ -242,6 +258,7 @@ export function useUploadDashboard() {
         cameraInputRef,
         analysisResult,
         setAnalysisResult,
+        lastAnalysisFileName,
         recentDocuments,
         uploadError,
         isUploading,

@@ -19,11 +19,7 @@ export default function InsightCard({ insight, onNewSimulation, onViewDetails }:
                 </span>
                 {hasInsight ? (
                     <p className="text-xs font-medium leading-relaxed text-emerald-50/90">
-                        Vos revenus devraient évoluer de{' '}
-                        <span className="bg-emerald-500/40 text-emerald-200 px-1.5 py-0.5 rounded-md font-bold">
-                            {insight.percentage}%
-                        </span>{' '}
-                        selon la dernière prédiction générée.
+                        {insight.message}
                     </p>
                 ) : (
                     <p className="text-xs font-medium leading-relaxed text-emerald-50/60">

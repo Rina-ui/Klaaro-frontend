@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { FileSpreadsheet, BrainCircuit } from 'lucide-react';
+import { FileSpreadsheet, BrainCircuit, Loader2 } from 'lucide-react';
+import { useAuth } from '../../../use_cases/hooks/useAuth.ts';
 
 interface ConfigBarProps {
     onPredict: (file: File, targetCol: string, nDays: number) => void;
@@ -7,17 +8,58 @@ interface ConfigBarProps {
 }
 
 export default function PredictionConfigBar({ onPredict, loading }: ConfigBarProps): React.JSX.Element {
-    const [targetCol, setTargetCol] = useState('ventes');
+    const { token } = useAuth();
+    const [targetCol, setTargetCol] = useState('');
     const [nDays, setNDays] = useState(30);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [availableColumns, setAvailableColumns] = useState<string[]>([]);
+    const [columnsLoading, setColumnsLoading] = useState(false);
+    const [columnsError, setColumnsError] = useState<string | null>(null);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) setSelectedFile(e.target.files[0]);
+    // Dès qu'un fichier est choisi, on lit ses vraies colonnes (via /ml/preprocess,
+    // qui les renvoie déjà dans rapport.colonnes_apres) pour proposer un menu
+    // déroulant au lieu de faire deviner un nom de colonne à l'utilisateur.
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setSelectedFile(file);
+        setAvailableColumns([]);
+        setTargetCol('');
+        setColumnsError(null);
+
+        if (!token) return;
+
+        setColumnsLoading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch('http://localhost:8000/ml/preprocess', {
+                method: 'POST',
+                body: formData,
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.rapport?.colonnes_apres?.length) {
+                setAvailableColumns(data.rapport.colonnes_apres);
+                setTargetCol(data.rapport.colonnes_apres[0]);
+            } else {
+                setColumnsError("Impossible de lire les colonnes de ce fichier.");
+            }
+        } catch (err) {
+            console.error("Erreur lors de la lecture des colonnes :", err);
+            setColumnsError("Impossible de lire les colonnes de ce fichier.");
+        } finally {
+            setColumnsLoading(false);
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (selectedFile) onPredict(selectedFile, targetCol, nDays);
+        if (selectedFile && targetCol) onPredict(selectedFile, targetCol, nDays);
     };
 
     return (
@@ -34,16 +76,40 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
                 </div>
             </div>
 
-            {/* Input Colonne */}
+            {/* Sélecteur de colonne : menu déroulant dès que les colonnes sont connues,
+                sinon champ texte de secours (fichier pas encore choisi / lecture échouée) */}
             <div className="flex-1 w-full">
-                <input
-                    type="text"
-                    value={targetCol}
-                    onChange={(e) => setTargetCol(e.target.value)}
-                    placeholder="Colonne (ex: ventes)"
-                    className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:border-[#1e5138]"
-                    required
-                />
+                {availableColumns.length > 0 ? (
+                    <select
+                        value={targetCol}
+                        onChange={(e) => setTargetCol(e.target.value)}
+                        className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:border-[#1e5138]"
+                        required
+                    >
+                        {availableColumns.map((col) => (
+                            <option key={col} value={col}>{col}</option>
+                        ))}
+                    </select>
+                ) : (
+                    <div className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl flex items-center gap-2">
+                        {columnsLoading ? (
+                            <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1e5138]" />
+                                <span className="text-xs font-semibold text-gray-400">Lecture des colonnes...</span>
+                            </>
+                        ) : (
+                            <input
+                                type="text"
+                                value={targetCol}
+                                onChange={(e) => setTargetCol(e.target.value)}
+                                placeholder={columnsError ?? "Sélectionnez d'abord un fichier"}
+                                className="w-full bg-transparent text-xs font-semibold text-gray-700 focus:outline-none"
+                                disabled={!selectedFile}
+                                required
+                            />
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Input Jours */}
@@ -62,7 +128,7 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
             {/* Bouton Soumettre */}
             <button
                 type="submit"
-                disabled={loading || !selectedFile}
+                disabled={loading || !selectedFile || !targetCol || columnsLoading}
                 className="h-12 px-6 bg-[#1e5138] hover:bg-[#153a28] disabled:bg-gray-300 disabled:text-gray-500 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
             >
                 <BrainCircuit className="w-4 h-4" />
