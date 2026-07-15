@@ -6,9 +6,8 @@ import {
     PieChart, Pie, Cell,
     XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
 } from 'recharts';
-import type {PreprocessResponse} from '../../../use_cases/hooks/useUploadDashboard.ts';
+import type { PreprocessResponse } from '../../../use_cases/hooks/useUploadDashboard.ts';
 
-// Extension de l'interface pour supporter le type de graphique du backend
 interface ExtendedPreprocessResponse extends PreprocessResponse {
     chart_type?: 'bar' | 'line' | 'scatter' | 'pie';
 }
@@ -24,9 +23,8 @@ export default function PreprocessResultSection({ result }: Props): React.JSX.El
 
     const columns = result.rapport.colonnes_apres || [];
     const dataRows = result.apercu_donnees || [];
-    const chartType = result.chart_type || 'bar'; // Type dynamique reçu du backend
+    const chartType = result.chart_type || 'bar';
 
-    // Fonction de rendu dynamique du graphique selon le type détecté par le ML
     const renderChart = () => {
         if (!result.chart_data || result.chart_data.length === 0) {
             return <p className="text-sm text-gray-400 italic">Aucune donnée structurelle disponible pour l'affichage graphique.</p>;
@@ -40,7 +38,7 @@ export default function PreprocessResultSection({ result }: Props): React.JSX.El
                         <XAxis dataKey="name" stroke="#6b7280" fontSize={11} tickLine={false} />
                         <YAxis stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} />
                         <Tooltip />
-                        <Legend iconSize={10} fontSize={11} />
+                        <Legend iconSize={10} wrapperStyle={{ fontSize: '11px' }} />
                         <Line type="monotone" dataKey="valeur" stroke="#1e5138" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                     </LineChart>
                 );
@@ -94,8 +92,6 @@ export default function PreprocessResultSection({ result }: Props): React.JSX.El
     return (
         <div className="w-full mt-6 flex flex-col gap-6 transition-all duration-300">
             <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* Rapport de Prétraitement */}
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
                     <div>
                         <h3 className="text-lg font-bold text-gray-900 mb-2">Rapport de Prétraitement</h3>
@@ -118,13 +114,12 @@ export default function PreprocessResultSection({ result }: Props): React.JSX.El
 
                     <button
                         onClick={() => setShowPreview(!showPreview)}
-                        className="w-full py-2.5 px-4 bg-[#1e5138] hover:bg-[#153a28] text-white text-xs font-bold rounded-xl transition-colors duration-200 text-center shadow-sm"
+                        className="w-full py-2.5 px-4 bg-[#1e5138] hover:bg-[#153a28] text-white text-xs font-bold rounded-xl transition-colors duration-200 text-center shadow-sm cursor-pointer border-none"
                     >
                         {showPreview ? "Masquer l'aperçu des données" : "Voir l'aperçu des données"}
                     </button>
                 </div>
 
-                {/* Graphique Adaptatif */}
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm lg:col-span-2 min-h-[260px]">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold text-gray-900">Analyse Graphique Visuelle</h3>
@@ -140,7 +135,6 @@ export default function PreprocessResultSection({ result }: Props): React.JSX.El
                 </div>
             </div>
 
-            {/* Aperçu des données (.head()) */}
             {showPreview && (
                 <div className="w-full bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                     <div className="mb-4">

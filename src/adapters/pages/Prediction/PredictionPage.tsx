@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePredictions } from "../../../use_cases/hooks/usePrediction.ts";
 import { useRapportHistory } from "../../../use_cases/hooks/useRapportHistory.ts";
 import MetricGauges from "./MetricGauges.tsx";
@@ -8,6 +8,7 @@ import SummaryCards from "./SummaryCards.tsx";
 import NavigationTabs from "../../components/ui/NavigationTabs.tsx";
 import PredictionConfigBar from "./PredictionConfigBar.tsx";
 import RapportHistorySelect from "../../components/shared/RapportHistorySelect.tsx";
+import KlaaroChatDrawer from "../../components/shared/KlaaroChatDrawer.tsx";
 
 export default function PredictionsPage(): React.JSX.Element {
     const {
@@ -26,8 +27,11 @@ export default function PredictionsPage(): React.JSX.Element {
 
     const { history, loading: historyLoading, refresh: refreshHistory } = useRapportHistory('prediction');
 
-    // Après une nouvelle prédiction réussie, on rafraîchit la liste pour qu'elle y apparaisse
-    React.useEffect(() => {
+    // État réactif pour stocker l'ID du rapport actif
+    const [selectedRapportId, setSelectedRapportId] = useState<string | null>(null);
+
+    // Après une nouvelle prédiction réussie, on rafraîchit la liste d'historique
+    useEffect(() => {
         if (lastGeneratedAt) refreshHistory();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [lastGeneratedAt]);
@@ -35,6 +39,7 @@ export default function PredictionsPage(): React.JSX.Element {
     return (
         <div className="w-full text-[#1a1a1a] font-sans p-4 md:p-8 antialiased flex flex-col items-center min-h-screen relative overflow-hidden">
 
+            {/* Arrière-plans décoratifs */}
             <div className="absolute top-[-20%] left-[-10%] w-[850px] h-[550px] bg-[#1e5138]/20 rounded-[140px] rotate-[15deg] pointer-events-none z-0 mix-blend-multiply" />
             <div className="absolute top-[-8%] left-[-2%] w-[500px] h-[400px] bg-[#1e5138]/35 rounded-[100px] rotate-[8deg] pointer-events-none z-0 mix-blend-multiply" />
             <div className="absolute top-[35%] right-[-12%] w-[700px] h-[500px] bg-[#1e5138]/15 rounded-[120px] rotate-[-20deg] pointer-events-none z-0 mix-blend-multiply" />
@@ -47,7 +52,10 @@ export default function PredictionsPage(): React.JSX.Element {
                 <RapportHistorySelect
                     history={history}
                     loading={historyLoading}
-                    onSelect={(rapport) => loadRapport(rapport.content)}
+                    onSelect={(rapport) => {
+                        setSelectedRapportId(rapport.id); // Liaison de l'ID du rapport sélectionné
+                        loadRapport(rapport.content);
+                    }}
                     label="Revoir une ancienne prédiction..."
                 />
 
@@ -73,6 +81,12 @@ export default function PredictionsPage(): React.JSX.Element {
 
                 <SummaryCards summary={summary} />
             </div>
+
+            {/* Intégration du module de discussion intelligent Klaaro */}
+            <KlaaroChatDrawer
+                activeRapportId={selectedRapportId}
+                chartData={chartData}
+            />
         </div>
     );
 }

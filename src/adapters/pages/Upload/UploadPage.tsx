@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { UploadCloud, Link2, Camera, AlertTriangle, FileText, BarChart3, Clock } from 'lucide-react';
 import { useUploadDashboard } from "../../../use_cases/hooks/useUploadDashboard.ts";
 import { useLocalStorageState } from "../../../use_cases/hooks/useLocalStorageState.ts";
@@ -11,6 +11,7 @@ import UploadActionCard from "./UploadActionCard.tsx";
 import AnalysisProgressCard from "./AnalysisProgressCard.tsx";
 import ConnectDatabaseModal from "./ConnectDatabaseModal.tsx";
 import PreprocessResultSection from "./PreprocessResultSection.tsx";
+import KlaaroChatDrawer from "../../components/shared/KlaaroChatDrawer.tsx";
 
 export default function UploadPage(): React.JSX.Element {
     const [isDbModalOpen, setIsDbModalOpen] = React.useState(false);
@@ -37,13 +38,27 @@ export default function UploadPage(): React.JSX.Element {
 
     const { history, loading: historyLoading, refresh: refreshHistory } = useRapportHistory('preprocessing');
 
-    React.useEffect(() => {
+    // État local pour le rapport actif afin de le lier au Chat
+    const [selectedRapportId, setSelectedRapportId] = useState<string | null>(null);
+
+    useEffect(() => {
         if (analysisResult) {
             setActiveSubTab('analysis');
             refreshHistory();
+            // Si le résultat dispose d'un identifiant de rapport, on le sélectionne
+            if (analysisResult.rapport?.id) {
+                setSelectedRapportId(analysisResult.rapport.id);
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [analysisResult]);
+
+    // Formatage des données graphiques de prétraitement pour être compatible avec l'interface attendue par Klaaro
+    const chartDataForKlaaro = analysisResult?.chart_data?.map(point => ({
+        date: point.name,
+        Historique: typeof point.valeur === 'number' ? point.valeur : null,
+        Prevision: null
+    })) || null;
 
     return (
         <div className="w-full text-[#1a1a1a] font-sans p-4 md:p-8 antialiased flex flex-col items-center min-h-screen relative overflow-hidden">
@@ -91,12 +106,14 @@ export default function UploadPage(): React.JSX.Element {
                     </div>
                 </header>
 
-                {/* Historique d'analyses */}
                 <div className="mb-6">
                     <RapportHistorySelect
                         history={history}
                         loading={historyLoading}
-                        onSelect={(rapport) => loadRapport(rapport.content)}
+                        onSelect={(rapport) => {
+                            setSelectedRapportId(rapport.id);
+                            loadRapport(rapport.content);
+                        }}
                         label="Revoir une ancienne analyse..."
                     />
                 </div>
@@ -113,11 +130,7 @@ export default function UploadPage(): React.JSX.Element {
 
                 {activeSubTab === 'import' ? (
                     <div className="w-full flex flex-col gap-6 animate-fade-in">
-
-                        {/* SECTION DES CARTES (2 en haut asymétriques, 2 au milieu asymétriques) */}
                         <div className="flex flex-col gap-6 w-full">
-
-                            {/* LIGNE 1 : Fichier (60%) & Connexion (40%) */}
                             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                                 <div className="lg:col-span-3">
                                     <UploadActionCard
@@ -139,7 +152,6 @@ export default function UploadPage(): React.JSX.Element {
                                 </div>
                             </div>
 
-                            {/* LIGNE 2 : Photographier (40%) & Analyse en cours (60%) */}
                             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
                                 <div className="lg:col-span-2">
                                     <UploadActionCard
@@ -154,10 +166,8 @@ export default function UploadPage(): React.JSX.Element {
                                     <AnalysisProgressCard analysis={analysis} />
                                 </div>
                             </div>
-
                         </div>
 
-                        {/* LIGNE 3 : Tableau récent prenant toute la largeur de l'écran en bas */}
                         <div className="w-full bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                                 <Clock className="w-4 h-4 text-gray-500" />
@@ -206,7 +216,6 @@ export default function UploadPage(): React.JSX.Element {
                                 </div>
                             )}
                         </div>
-
                     </div>
                 ) : (
                     <div className="w-full mb-6 animate-fade-in">
@@ -235,6 +244,12 @@ export default function UploadPage(): React.JSX.Element {
                 isOpen={isDbModalOpen}
                 onClose={() => setIsDbModalOpen(false)}
                 onSuccess={refreshStats}
+            />
+
+            {/* Klaaro Assistant branché sur l'importation & le nettoyage de données */}
+            <KlaaroChatDrawer
+                activeRapportId={selectedRapportId}
+                chartData={chartDataForKlaaro}
             />
         </div>
     );

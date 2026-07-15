@@ -1,4 +1,4 @@
-import type { RapportEntity, CreateRapportPayload } from "../../entities/Report.ts";
+import type {CreateRapportPayload, RapportEntity} from "../../entities/Report.ts";
 
 export class HttpRapportRepository {
     private baseUrl = "http://127.0.0.1:8000";
@@ -20,8 +20,9 @@ export class HttpRapportRepository {
         return response.json();
     }
 
-    async getRapportsByUser(token: string, userId: string): Promise<RapportEntity[]> {
-        const response = await fetch(`${this.baseUrl}/rapports/user/${userId}`, {
+    // Modification ici : On interroge la route `/me` du backend
+    async getRapportsByUser(token: string): Promise<RapportEntity[]> {
+        const response = await fetch(`${this.baseUrl}/rapports/me`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -36,11 +37,12 @@ export class HttpRapportRepository {
         return response.json();
     }
 
-    // Renvoie le rapport le plus récent d'un type donné (ex: dernière analyse, dernière prédiction)
-    async getLatestRapportByType(token: string, userId: string, type: RapportEntity['type']): Promise<RapportEntity | null> {
-        const rapports = await this.getRapportsByUser(token, userId);
+    // Modification ici : Plus besoin de userId, on utilise uniquement le token
+    async getLatestRapportByType(token: string, type: RapportEntity['type']): Promise<RapportEntity | null> {
+        const rapports = await this.getRapportsByUser(token);
         const filtered = rapports
             .filter(r => r.type === type)
+            // Assure-toi que le champ correspond bien à ce que renvoie ton RapportResponse (ex: date_generation ou date_creation)
             .sort((a, b) => new Date(b.date_generation).getTime() - new Date(a.date_generation).getTime());
         return filtered[0] ?? null;
     }

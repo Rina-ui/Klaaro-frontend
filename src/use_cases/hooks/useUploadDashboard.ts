@@ -91,23 +91,24 @@ export function useUploadDashboard() {
         }
     }, [user?.id, token]);
 
-    // 🗄️ Va chercher la dernière analyse sauvegardée en base au montage, pour ne
-    // pas dépendre uniquement du localStorage (donc ça marche aussi sur un autre
-    // appareil, ou après avoir vidé le cache du navigateur).
     const loadLatestAnalysis = useCallback(async () => {
-        if (!user?.id || !token) return;
+        if (!token) return;
         try {
-            const latest = await rapportRepo.getLatestRapportByType(token, user.id, 'preprocessing');
-            if (latest) {
+            const latest = await rapportRepo.getLatestRapportByType(token, 'preprocessing');
+
+            // 1. On vérifie si "latest" existe et n'est pas vide avant d'essayer de parser
+            if (latest && latest.content && latest.content.trim() !== "") {
                 const stored = JSON.parse(latest.content) as { result: PreprocessResponse; fileName: string };
                 setAnalysisResult(stored.result);
                 setLastAnalysisFileName(stored.fileName);
+            } else {
+                console.log("Aucune analyse précédente trouvée en base de données.");
             }
         } catch (err) {
-            console.error("Impossible de recharger la dernière analyse depuis le backend :", err);
+            // L'erreur est capturée ici et ne fait plus planter l'application
+            console.warn("Impossible de recharger la dernière analyse (vide ou inexistante) :", err);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id, token]);
+    }, [token]);
 
     const persistAnalysis = async (result: PreprocessResponse, fileName: string) => {
         if (!token) return;
