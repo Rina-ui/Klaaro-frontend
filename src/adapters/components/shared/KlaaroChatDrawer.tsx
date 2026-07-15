@@ -17,11 +17,10 @@ export default function KlaaroChatDrawer({ activeRapportId, chartData }: KlaaroC
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Suggestions de questions rapides et légères
     const quickPrompts = [
-        { label: "📈 Explique-moi cette prédiction", text: "Que veut dire cette prediction ?" },
-        { label: "🔍 Pourquoi cette hausse ?", text: "Comment s'explique cette hausse sur le graphique ?" },
-        { label: "💡 Des actions recommandées ?", text: "Quelles sont les actions recommandées pour la suite ?" }
+        { label: " Explique-moi cette prédiction", text: "Que veut dire cette prediction ?" },
+        { label: " Pourquoi cette hausse ?", text: "Comment s'explique cette hausse sur le graphique ?" },
+        { label: " Des actions recommandées ?", text: "Quelles sont les actions recommandées pour la suite ?" }
     ];
 
     useEffect(() => {
@@ -55,44 +54,55 @@ export default function KlaaroChatDrawer({ activeRapportId, chartData }: KlaaroC
 
     return (
         <>
+            {/* Bouton d'ouverture flottant */}
             <button
-                onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 z-50 bg-[#1e5138] hover:bg-[#153a28] text-white p-4 rounded-full shadow-lg hover:scale-105 transition-all cursor-pointer flex items-center gap-2 font-semibold text-xs border-none"
+                onClick={() => setIsOpen(!isOpen)}
+                className="fixed bottom-6 right-6 z-50 bg-[#1e5138] hover:bg-[#153a28] text-white p-4 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer flex items-center gap-2 font-semibold text-xs border-none"
             >
-                <MessageSquare size={18} />
-                <span>Discuter avec Klaaro</span>
+                <div className={`transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}>
+                    {isOpen ? <X size={18} /> : <MessageSquare size={18} />}
+                </div>
+                <span>{isOpen ? "Fermer" : "Discuter avec Klaaro"}</span>
             </button>
 
-            <div className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white border-l border-gray-100 shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            {/* Fenêtre de Chat Flottante avec un chouia de transparence (95% opaque + blur) */}
+            <div className={`fixed bottom-24 right-6 z-50 w-[380px] h-[500px] bg-white/95 backdrop-blur-md border border-gray-150/80 shadow-2xl rounded-2xl flex flex-col origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                isOpen
+                    ? 'scale-100 opacity-100 translate-y-0 visible'
+                    : 'scale-75 opacity-0 translate-y-12 pointer-events-none invisible'
+            }`}>
 
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-[#1e5138] text-white">
+                {/* Header opaque de base avec légère transparence */}
+                <div className="p-3.5 border-b border-gray-100/30 flex justify-between items-center bg-[#1e5138]/95 text-white backdrop-blur-sm">
                     <div className="flex items-center gap-2">
-                        <Sparkles size={16} className="text-emerald-300 animate-pulse" />
+                        <Sparkles size={15} className="text-emerald-300 animate-pulse" />
                         <div>
                             <h3 className="text-xs font-bold tracking-wide">Klaaro Assistant</h3>
-                            <span className="text-[9px] text-emerald-200/80">Analyse de Rapport & Graphique</span>
+                            <span className="text-[9px] text-emerald-200/80 block">Analyse de Rapport & Graphique</span>
                         </div>
                     </div>
                     <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white transition-colors cursor-pointer bg-transparent border-none">
-                        <X size={18} />
+                        <X size={16} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+                {/* Arrière-plan de base (gray-50) légèrement adouci */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/90 scrollbar-none">
                     {messages.length === 0 && (
-                        <div className="h-full flex flex-col justify-center p-2 text-gray-400">
-                            <div className="text-center mb-6">
-                                <Sparkles size={24} className="text-[#1e5138] mx-auto mb-2 opacity-60" />
+                        <div className="h-full flex flex-col justify-center text-center p-2">
+                            <div className="mb-5 animate-fade-in">
+                                <Sparkles size={20} className="text-[#1e5138] mx-auto mb-2 opacity-70 animate-bounce" />
                                 <p className="text-xs font-bold text-gray-700">Comment puis-je vous aider aujourd'hui ?</p>
                             </div>
 
-                            {/* Boutons d'actions rapides transparents et légers */}
-                            <div className="flex flex-col gap-2 w-full max-w-sm mx-auto">
+                            {/* Suggestions rapides */}
+                            <div className="flex flex-col gap-2 w-full">
                                 {quickPrompts.map((prompt, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => handleQuickPromptClick(prompt.text)}
-                                        className="w-full text-left bg-white border border-gray-200 hover:border-[#1e5138] hover:bg-emerald-50/30 text-gray-700 text-xs px-4 py-3.5 rounded-xl shadow-sm transition-all cursor-pointer font-medium"
+                                        style={{ animationDelay: `${idx * 75}ms` }}
+                                        className="w-full text-left bg-white/95 border border-gray-200 hover:border-[#1e5138] hover:bg-emerald-50/30 text-gray-700 text-xs px-4 py-3.5 rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-pointer font-medium animate-slide-up"
                                     >
                                         {prompt.label}
                                     </button>
@@ -102,25 +112,29 @@ export default function KlaaroChatDrawer({ activeRapportId, chartData }: KlaaroC
                     )}
 
                     {messages.map((msg) => (
-                        <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
-                            <div className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed ${msg.sender === 'user' ? 'bg-[#1e5138] text-white rounded-tr-none' : 'bg-white border border-gray-200 text-gray-800 shadow-sm rounded-tl-none'}`}>
+                        <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} animate-fade-in`}>
+                            <div className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed ${
+                                msg.sender === 'user'
+                                    ? 'bg-[#1e5138] text-white rounded-tr-none'
+                                    : 'bg-white border border-gray-200 text-gray-800 shadow-sm rounded-tl-none'
+                            }`}>
                                 <p>{msg.text}</p>
                             </div>
 
                             {msg.decisions && msg.decisions.length > 0 && (
-                                <div className="mt-3 w-full max-w-[85%] space-y-2.5">
-                                    <span className="text-[9px] font-bold text-[#1e5138] uppercase tracking-wider block">Fiches d'actions recommandées :</span>
+                                <div className="mt-3 w-full max-w-[85%] space-y-2 animate-slide-up">
+                                    <span className="text-[9px] font-bold text-[#1e5138] uppercase tracking-wider block">Actions recommandées :</span>
                                     {msg.decisions.map((dec) => (
-                                        <div key={dec.id} className="bg-white border-l-4 border-emerald-600 rounded-r-xl p-3 shadow-sm flex flex-col justify-between gap-3 border-y border-r border-gray-200/60">
+                                        <div key={dec.id} className="bg-white border-l-4 border-emerald-600 rounded-r-xl p-3 shadow-sm flex flex-col justify-between gap-3 border-y border-r border-gray-200/60 transition-all duration-250 hover:shadow-md">
                                             <div>
-                                                <h4 className="text-[11px] font-extrabold text-gray-900">{dec.title}</h4>
-                                                <p className="text-[10px] text-gray-500 mt-1 leading-normal">{dec.description}</p>
+                                                <h4 className="text-[10px] font-extrabold text-gray-900">{dec.title}</h4>
+                                                <p className="text-[9px] text-gray-500 mt-0.5 leading-normal">{dec.description}</p>
                                             </div>
                                             <button
                                                 onClick={() => handleAcceptDecision(dec.id)}
-                                                className="self-end bg-emerald-50 hover:bg-emerald-100 text-[#1e5138] text-[9px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-all cursor-pointer border-none"
+                                                className="self-end bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-[#1e5138] text-[9px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer border-none"
                                             >
-                                                <Check size={11} />
+                                                <Check size={10} />
                                                 <span>Accepter l'action</span>
                                             </button>
                                         </div>
@@ -131,38 +145,63 @@ export default function KlaaroChatDrawer({ activeRapportId, chartData }: KlaaroC
                     ))}
 
                     {isLoading && (
-                        <div className="flex items-center gap-2 text-gray-400 text-[10px] font-medium pl-1">
+                        <div className="flex items-center gap-2 text-gray-500 text-[10px] font-semibold pl-1 animate-pulse">
                             <Loader2 size={12} className="animate-spin text-[#1e5138]" />
-                            <span>Klaaro analyse vos courbes et données...</span>
+                            <span>Klaaro analyse vos courbes...</span>
                         </div>
                     )}
 
                     {error && (
-                        <div className="text-[10px] font-medium text-red-500 bg-red-50 p-2.5 rounded-xl border border-red-100">
+                        <div className="text-[10px] font-medium text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-100">
                             {error}
                         </div>
                     )}
                     <div ref={messagesEndRef} />
                 </div>
 
-                <form onSubmit={handleSend} className="p-3 border-t border-gray-100 bg-white flex gap-2">
+                {/* Zone de saisie avec un chouia de transparence */}
+                <form onSubmit={handleSend} className="p-3 border-t border-gray-100 bg-white/95 backdrop-blur-sm flex gap-2">
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Ex: Explique-moi ce pic de prévision..."
-                        className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 text-xs focus:outline-none focus:border-[#1e5138] text-gray-800 h-10"
+                        placeholder="Poser une question..."
+                        className="flex-1 bg-gray-50/80 border border-gray-200 rounded-xl px-3 text-xs focus:outline-none focus:border-[#1e5138] text-gray-800 h-9 transition-colors duration-200"
                         disabled={isLoading}
                     />
                     <button
                         type="submit"
                         disabled={isLoading || !input.trim()}
-                        className="bg-[#1e5138] hover:bg-[#153a28] disabled:bg-gray-200 disabled:text-gray-400 text-white p-2.5 rounded-xl transition-all cursor-pointer border-none flex items-center justify-center"
+                        className="bg-[#1e5138] hover:bg-[#153a28] active:scale-95 disabled:scale-100 disabled:bg-gray-250 disabled:text-gray-400 text-white p-2 rounded-xl transition-all cursor-pointer border-none flex items-center justify-center w-9 h-9"
                     >
-                        <Send size={14} />
+                        <Send size={13} />
                     </button>
                 </form>
             </div>
+
+            {/* Styles d'animation personnalisés */}
+            <style>{`
+                @keyframes slideUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(16px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                .animate-slide-up {
+                    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                .animate-fade-in {
+                    animation: fadeIn 0.3s ease-out forwards;
+                }
+            `}</style>
         </>
     );
 }
