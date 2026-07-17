@@ -18,15 +18,25 @@ export interface PreprocessRapport {
 }
 
 export interface ChartDataItem {
-    name: string;
+    name: string | number;
     valeur: number;
+}
+
+// Représente un bloc graphique complet généré par ton service ML
+export interface PreparedChart {
+    type: 'bar' | 'line' | 'scatter' | 'pie';
+    title: string;
+    reason: string;
+    explanation: string;
+    colonne_choisie?: string;
+    data: ChartDataItem[];
 }
 
 export interface PreprocessResponse {
     status: string;
     format_origine: string;
+    charts: PreparedChart[]; // L'API renvoie désormais ce tableau de graphiques
     rapport: PreprocessRapport;
-    chart_data: ChartDataItem[];
     apercu_donnees: Array<Record<string, any>>;
 }
 
