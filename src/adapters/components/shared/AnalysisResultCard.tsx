@@ -1,36 +1,87 @@
-import { Download, FileSpreadsheet, CheckCircle2, Info } from 'lucide-react';
+import { useState } from 'react';
+import { Download, FileSpreadsheet, CheckCircle2, Info, Loader2 } from 'lucide-react';
 
 interface AnalysisResultProps {
     filename: string;
-    preprocessedFileUrl?: string;
+    rawFile?: File; // Le fichierUpload sélectionné par l'utilisateur
     explications: string;
     statistiques?: {
         lignesNettoyees: number;
         valeursManquantesCorrigees: number;
         anomaliesDetectees: number;
     };
+    exportFormat?: 'csv' | 'xlsx' | 'json'; // Format souhaité (csv par défaut)
 }
 
 export default function AnalysisResultCard({
                                                filename,
-                                               preprocessedFileUrl,
+                                               rawFile,
                                                explications,
-                                               statistiques
+                                               statistiques,
+                                               exportFormat = 'csv'
                                            }: AnalysisResultProps) {
+    const [isDownloading, setIsDownloading] = useState(false);
 
-    // Télécharger le fichier prétraité
-    const handleDownloadPreprocessed = () => {
-        if (preprocessedFileUrl) {
-            window.open(preprocessedFileUrl, '_blank');
-        } else {
-            // Simulation de téléchargement si pas d'URL réelle
-            const content = "Col1,Col2,Col3\nVal1,Val2,Val3";
-            const blob = new Blob([content], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `pretraite_${filename}`;
-            a.click();
+    // Télécharger le fichier prétraité depuis l'API FastAPI
+    const handleDownloadPreprocessed = async () => {
+        if (!rawFile) {
+            console.error("Fichier d'origine non fourni au composant.");
+            return;
+        }
+
+        setIsDownloading(true);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', rawFile);
+
+            // URL de ton API Backend (ajuste l'URL/port selon ta configuration)
+            const apiUrl = `${'http://localhost:8000'}/ml/export?export_format=${exportFormat}`;
+
+            // Récupération éventuelle du token d'authentification si la route est sécurisée
+            const token = localStorage.getItem('token');
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    ...(token && { Authorization: `Bearer ${token}` }),
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || "Erreur lors du téléchargement du fichier.");
+            }
+
+            // Récupération du blob binaire renvoyé par FastAPI
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+
+            // Extraction dynamique du nom de fichier transmis via les headers HTTP
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let downloadFilename = `klaaro_clean_${filename}`;
+            if (contentDisposition && contentDisposition.includes('filename=')) {
+                const matches = contentDisposition.match(/filename="?([^";]+)"?/);
+                if (matches && matches[1]) {
+                    downloadFilename = matches[1];
+                }
+            }
+
+            // Déclenchement automatique du téléchargement
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = downloadFilename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+
+        } catch (error) {
+            console.error("Erreur de téléchargement :", error);
+            alert("Impossible de télécharger le fichier nettoyé.");
+        } finally {
+            setIsDownloading(false);
         }
     };
 
@@ -44,6 +95,7 @@ export default function AnalysisResultCard({
         a.href = url;
         a.download = `rapport_analyse_${filename}.txt`;
         a.click();
+        window.URL.revokeObjectURL(url);
     };
 
     return (
@@ -61,10 +113,15 @@ export default function AnalysisResultCard({
                 <div className="flex items-center gap-2">
                     <button
                         onClick={handleDownloadPreprocessed}
-                        className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/60 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                        disabled={isDownloading || !rawFile}
+                        className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-800 border border-emerald-200/60 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
                     >
-                        <FileSpreadsheet size={14} className="text-emerald-700" />
-                        <span>Télécharger Fichier Prétraité</span>
+                        {isDownloading ? (
+                            <Loader2 size={14} className="animate-spin text-emerald-700" />
+                        ) : (
+                            <FileSpreadsheet size={14} className="text-emerald-700" />
+                        )}
+                        <span>{isDownloading ? "Téléchargement..." : "Télécharger Fichier Prétraité"}</span>
                     </button>
 
                     <button

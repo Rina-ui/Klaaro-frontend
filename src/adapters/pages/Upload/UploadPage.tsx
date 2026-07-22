@@ -16,8 +16,10 @@ import AnalysisResultCard from "../../components/shared/AnalysisResultCard.tsx";
 
 export default function UploadPage(): React.JSX.Element {
     const [isDbModalOpen, setIsDbModalOpen] = React.useState(false);
-
     const [activeSubTab, setActiveSubTab] = useLocalStorageState<'import' | 'analysis'>('klaaro_upload_active_tab', 'import');
+
+    // État pour conserver le dernier fichier binaire sélectionné par l'utilisateur
+    const [lastUploadedFile, setLastUploadedFile] = useState<File | null>(null);
 
     const {
         stats,
@@ -27,7 +29,7 @@ export default function UploadPage(): React.JSX.Element {
         cameraInputRef,
         handleFileSelect,
         handleStartScan,
-        onFileChange,
+        onFileChange: originalOnFileChange,
         refreshStats,
         analysisResult,
         loadRapport,
@@ -37,10 +39,17 @@ export default function UploadPage(): React.JSX.Element {
     } = useUploadDashboard();
 
     const { history, loading: historyLoading, refresh: refreshHistory } = useRapportHistory('preprocessing');
-
     const [selectedRapportId, setSelectedRapportId] = useState<string | null>(null);
 
-    // Casting explicite pour isoler les accès aux clés dynamiques sans warning ESLint/TS
+    // Wrapper pour intercepter le fichier sélectionné et le stocker avant le traitement
+    const onFileChange = (e: React.ChangeEvent<HTMLInputElement>, isCamera: boolean = false) => {
+        if (e.target.files && e.target.files[0]) {
+            setLastUploadedFile(e.target.files[0]);
+        }
+        originalOnFileChange(e, isCamera);
+    };
+
+    // Casting explicite pour isoler les accès aux clés dynamiques
     const rawResult = analysisResult as unknown as Record<string, unknown> | null;
     const rapportObj = rawResult?.rapport as Record<string, unknown> | undefined;
     const statsObj = rawResult?.stats as Record<string, number> | undefined;
@@ -63,11 +72,10 @@ export default function UploadPage(): React.JSX.Element {
         Prevision: null
     })) || null;
 
-    const extractedFileName = (rawResult?.filename as string) || (rapportObj?.filename as string) || "Document_analyse.csv";
+    const extractedFileName = lastUploadedFile?.name || (rawResult?.filename as string) || (rapportObj?.filename as string) || "Document_analyse.csv";
     const extractedExplications = (rawResult?.explications as string) ||
         (rapportObj?.summary as string) ||
         "L'analyse et le nettoyage des données ont été exécutés avec succès.";
-    const preprocessedUrl = rawResult?.preprocessed_file_url as string | undefined;
 
     return (
         <div className="w-full text-[#1a1a1a] font-sans p-4 md:p-8 antialiased flex flex-col items-center min-h-screen relative overflow-hidden">
@@ -207,14 +215,14 @@ export default function UploadPage(): React.JSX.Element {
                                                     <div className="flex items-center gap-3">
                                                         <FileText className="w-4 h-4 text-[#1e5138] flex-shrink-0" />
                                                         <span className="text-xs font-semibold text-gray-700 truncate max-w-[180px] md:max-w-[280px]">
-                                                            {doc.name}
-                                                        </span>
+                                                                {doc.name}
+                                                            </span>
                                                     </div>
                                                 </td>
                                                 <td className="py-3">
-                                                    <span className="text-[10px] font-bold text-gray-500 uppercase bg-gray-100 px-2 py-0.5 rounded-md">
-                                                        {doc.type}
-                                                    </span>
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase bg-gray-100 px-2 py-0.5 rounded-md">
+                                                            {doc.type}
+                                                        </span>
                                                 </td>
                                                 <td className="py-3 text-xs text-gray-500 font-medium">
                                                     {formatRelativeDate(doc.upload_date)}
@@ -236,13 +244,14 @@ export default function UploadPage(): React.JSX.Element {
                             <>
                                 <AnalysisResultCard
                                     filename={extractedFileName}
-                                    preprocessedFileUrl={preprocessedUrl}
+                                    rawFile={lastUploadedFile || undefined}
                                     explications={extractedExplications}
                                     statistiques={{
                                         lignesNettoyees: statsObj?.lignes_traitees ?? 0,
                                         valeursManquantesCorrigees: statsObj?.valeurs_manquantes_corrigees ?? 0,
                                         anomaliesDetectees: statsObj?.anomalies_detectees ?? 0,
                                     }}
+                                    exportFormat="csv"
                                 />
 
                                 <PreprocessResultSection result={analysisResult} />
