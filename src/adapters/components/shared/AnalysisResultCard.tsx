@@ -3,7 +3,7 @@ import { Download, FileSpreadsheet, CheckCircle2, Info, Loader2 } from 'lucide-r
 
 interface AnalysisResultProps {
     filename: string;
-    rawFile?: File; // Le fichierUpload sélectionné par l'utilisateur
+    rawFile?: File; // Le fichier Upload sélectionné par l'utilisateur
     explications: string;
     statistiques?: {
         lignesNettoyees: number;
@@ -26,6 +26,7 @@ export default function AnalysisResultCard({
     const handleDownloadPreprocessed = async () => {
         if (!rawFile) {
             console.error("Fichier d'origine non fourni au composant.");
+            alert("Aucun fichier d'origine trouvé pour le téléchargement.");
             return;
         }
 
@@ -35,24 +36,31 @@ export default function AnalysisResultCard({
             const formData = new FormData();
             formData.append('file', rawFile);
 
-            // URL de ton API Backend (ajuste l'URL/port selon ta configuration)
-            const apiUrl = `${'http://localhost:8000'}/ml/export?export_format=${exportFormat}`;
-
-            // Récupération éventuelle du token d'authentification si la route est sécurisée
+            const apiUrl = `http://localhost:8000/ml/export?export_format=${exportFormat}`;
             const token = localStorage.getItem('token');
+
+            const headers: Record<string, string> = {};
+            if (token) {
+                headers["Authorization"] = `Bearer ${token}`;
+            }
+            // IMPORTANT : Ne PAS mettre "Content-Type": "application/json"
+            // Le navigateur gère le Content-Type et le boundary du FormData automatiquement.
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
+                headers,
                 body: formData,
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || "Erreur lors du téléchargement du fichier.");
+                let errorMessage = "Erreur lors du téléchargement du fichier.";
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.detail || errorMessage;
+                } catch {
+                    // Si la réponse d'erreur n'est pas du JSON
+                }
+                throw new Error(errorMessage);
             }
 
             // Récupération du blob binaire renvoyé par FastAPI
@@ -78,9 +86,9 @@ export default function AnalysisResultCard({
             link.remove();
             window.URL.revokeObjectURL(downloadUrl);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erreur de téléchargement :", error);
-            alert("Impossible de télécharger le fichier nettoyé.");
+            alert(error.message || "Impossible de télécharger le fichier nettoyé.");
         } finally {
             setIsDownloading(false);
         }
@@ -95,7 +103,9 @@ export default function AnalysisResultCard({
         const a = document.createElement('a');
         a.href = url;
         a.download = `rapport_analyse_${filename}.txt`;
+        document.body.appendChild(a);
         a.click();
+        a.remove();
         window.URL.revokeObjectURL(url);
     };
 
