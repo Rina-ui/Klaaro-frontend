@@ -8,7 +8,7 @@ import { Download, BarChart2, TrendingUp, Trash2, FileText, Plus } from 'lucide-
 const entrepriseRepo = new HttpEntrepriseRepository();
 
 interface Collaborator {
-    id: string | number;
+    id: string ;
     firstname: string;
     lastname: string;
     email: string;
@@ -99,11 +99,12 @@ export default function SettingsPage(): React.JSX.Element {
         }
     };
 
-    const handleDeleteCollaborator = async (collaboratorId: string | number) => {
+    const handleDeleteCollaborator = async (collaboratorId: string) => {
         if (!token || !window.confirm("Êtes-vous sûr de vouloir supprimer ce collaborateur ?")) return;
         try {
             await entrepriseRepo.deleteCollaborator(collaboratorId, token);
-            setCollaborators(collaborators.filter(c => c.id !== collaboratorId));
+            // Comparaison stricte en string
+            setCollaborators(collaborators.filter(c => String(c.id) !== String(collaboratorId)));
         } catch (err: unknown) {
             const error = err as Error;
             alert(error.message || "Impossible de supprimer ce membre.");
