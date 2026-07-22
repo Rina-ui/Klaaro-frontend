@@ -5,8 +5,9 @@ import type { RapportEntity, RapportType } from '../../entities/Report.ts';
 
 const rapportRepo = new HttpRapportRepository();
 
-// Liste l'historique des rapports d'un type donné (preprocessing ou prediction)
-// pour un utilisateur, du plus récent au plus ancien.
+// Ré-export du type pour l'utiliser proprement dans d'autres composants
+export type { RapportEntity, RapportType };
+
 export function useRapportHistory(type: RapportType) {
     const { token, user } = useAuth();
     const [history, setHistory] = useState<RapportEntity[]>([]);
@@ -16,10 +17,12 @@ export function useRapportHistory(type: RapportType) {
         if (!token || !user?.id) return;
         setLoading(true);
         try {
-            const all = await rapportRepo.getRapportsByUser(token, user.id);
+            const all: RapportEntity[] = await rapportRepo.getRapportsByUser(token, user.id);
             const filtered = all
-                .filter((r) => r.type === type)
-                .sort((a, b) => new Date(b.date_generation).getTime() - new Date(a.date_generation).getTime());
+                .filter((r: RapportEntity) => r.type === type)
+                .sort((a: RapportEntity, b: RapportEntity) =>
+                    new Date(b.date_generation).getTime() - new Date(a.date_generation).getTime()
+                );
             setHistory(filtered);
         } catch (err) {
             console.error(`Impossible de charger l'historique (${type}) :`, err);
@@ -29,7 +32,7 @@ export function useRapportHistory(type: RapportType) {
     }, [token, user?.id, type]);
 
     useEffect(() => {
-        refresh();
+        void refresh();
     }, [refresh]);
 
     return { history, loading, refresh };

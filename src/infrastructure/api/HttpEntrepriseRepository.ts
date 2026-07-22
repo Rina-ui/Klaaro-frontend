@@ -23,4 +23,27 @@ export class HttpEntrepriseRepository {
             throw new Error(errorData.detail || "Échec de l'ajout du collaborateur.");
         }
     }
+
+    async getCollaborators(token: string): Promise<any[]> {
+        const response = await fetch(`${this.baseUrl}/user/members`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) throw new Error("Impossible de récupérer l'équipe.");
+        return response.json();
+    }
+
+    async deleteCollaborator(userId: string | number, token: string): Promise<void> {
+        const response = await fetch(`${this.baseUrl}/user/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) throw new Error("Échec de la suppression du collaborateur.");
+    }
 }

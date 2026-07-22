@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UploadCloud, Link2, Camera, AlertTriangle, FileText, BarChart3, Clock } from 'lucide-react';
 import { useUploadDashboard } from "../../../use_cases/hooks/useUploadDashboard.ts";
 import { useLocalStorageState } from "../../../use_cases/hooks/useLocalStorageState.ts";
-import { useRapportHistory } from "../../../use_cases/hooks/useRapportHistory.ts";
+import { useRapportHistory, type RapportEntity } from "../../../use_cases/hooks/useRapportHistory.ts";
 import { formatRelativeDate } from "../../../use_cases/utils/formatRelativeDate.ts";
 import RapportHistorySelect from "../../components/shared/RapportHistorySelect.tsx";
 import NavigationTabs from "../../components/ui/NavigationTabs.tsx";
@@ -12,11 +12,11 @@ import AnalysisProgressCard from "./AnalysisProgressCard.tsx";
 import ConnectDatabaseModal from "./ConnectDatabaseModal.tsx";
 import PreprocessResultSection from "./PreprocessResultSection.tsx";
 import KlaaroChatDrawer from "../../components/shared/KlaaroChatDrawer.tsx";
+import AnalysisResultCard from "../../components/shared/AnalysisResultCard.tsx";
 
 export default function UploadPage(): React.JSX.Element {
     const [isDbModalOpen, setIsDbModalOpen] = React.useState(false);
 
-    // Persisté : survit à la navigation entre pages et au refresh
     const [activeSubTab, setActiveSubTab] = useLocalStorageState<'import' | 'analysis'>('klaaro_upload_active_tab', 'import');
 
     const {
@@ -38,34 +38,43 @@ export default function UploadPage(): React.JSX.Element {
 
     const { history, loading: historyLoading, refresh: refreshHistory } = useRapportHistory('preprocessing');
 
-    // État local pour le rapport actif afin de le lier au Chat
     const [selectedRapportId, setSelectedRapportId] = useState<string | null>(null);
+
+    // Casting explicite pour isoler les accès aux clés dynamiques sans warning ESLint/TS
+    const rawResult = analysisResult as unknown as Record<string, unknown> | null;
+    const rapportObj = rawResult?.rapport as Record<string, unknown> | undefined;
+    const statsObj = rawResult?.stats as Record<string, number> | undefined;
+    const chartDataArray = rawResult?.chart_data as Array<{ name: string; valeur: unknown }> | undefined;
 
     useEffect(() => {
         if (analysisResult) {
             setActiveSubTab('analysis');
             refreshHistory();
-            // Si le résultat dispose d'un identifiant de rapport, on le sélectionne
-            if (analysisResult.rapport?.id) {
-                setSelectedRapportId(analysisResult.rapport.id);
+            const rapportId = (rapportObj?.id as string) || (rawResult?.id as string);
+            if (rapportId) {
+                setSelectedRapportId(rapportId);
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [analysisResult]);
+    }, [analysisResult, refreshHistory, setActiveSubTab]);
 
-    // Formatage des données graphiques de prétraitement pour être compatible avec l'interface attendue par Klaaro
-    const chartDataForKlaaro = analysisResult?.chart_data?.map(point => ({
+    const chartDataForKlaaro = chartDataArray?.map((point) => ({
         date: point.name,
         Historique: typeof point.valeur === 'number' ? point.valeur : null,
         Prevision: null
     })) || null;
+
+    const extractedFileName = (rawResult?.filename as string) || (rapportObj?.filename as string) || "Document_analyse.csv";
+    const extractedExplications = (rawResult?.explications as string) ||
+        (rapportObj?.summary as string) ||
+        "L'analyse et le nettoyage des données ont été exécutés avec succès.";
+    const preprocessedUrl = rawResult?.preprocessed_file_url as string | undefined;
 
     return (
         <div className="w-full text-[#1a1a1a] font-sans p-4 md:p-8 antialiased flex flex-col items-center min-h-screen relative overflow-hidden">
             <input type="file" ref={fileInputRef} onChange={(e) => onFileChange(e, false)} accept=".csv,.xlsx,.xls,.pdf,.json" className="hidden" />
             <input type="file" ref={cameraInputRef} onChange={(e) => onFileChange(e, true)} accept="image/*" capture="environment" className="hidden" />
 
-            <div className="absolute top-[-10%] right-[-15%] w-[750px] h-[700px] bg-[#1e5138]/15 rounded-[160px] rotate-[15deg] pointer-events-none z-0 mix-blend-multiply" />
+            <div className="absolute top-[-10%] right-[-15%] w-187.5 h-175 bg-[#1e5138]/15 rounded-[160px] rotate-[15deg] pointer-events-none z-0 mix-blend-multiply" />
             <div className="absolute bottom-[-15%] right-[-5%] w-[600px] h-[450px] bg-[#1e5138]/30 rounded-[100px] rotate-[-10deg] pointer-events-none z-0 mix-blend-multiply" />
 
             <div className="w-full max-w-[1300px] flex flex-col relative z-10">
@@ -110,9 +119,13 @@ export default function UploadPage(): React.JSX.Element {
                     <RapportHistorySelect
                         history={history}
                         loading={historyLoading}
-                        onSelect={(rapport) => {
-                            setSelectedRapportId(rapport.id);
-                            loadRapport(rapport.content);
+                        onSelect={(rapport: RapportEntity) => {
+                            if (rapport?.id) {
+                                setSelectedRapportId(rapport.id);
+                            }
+                            if (rapport?.content) {
+                                loadRapport(rapport.content);
+                            }
                         }}
                         label="Revoir une ancienne analyse..."
                     />
@@ -218,9 +231,22 @@ export default function UploadPage(): React.JSX.Element {
                         </div>
                     </div>
                 ) : (
-                    <div className="w-full mb-6 animate-fade-in">
+                    <div className="w-full mb-6 animate-fade-in flex flex-col gap-6">
                         {analysisResult ? (
-                            <PreprocessResultSection result={analysisResult} />
+                            <>
+                                <AnalysisResultCard
+                                    filename={extractedFileName}
+                                    preprocessedFileUrl={preprocessedUrl}
+                                    explications={extractedExplications}
+                                    statistiques={{
+                                        lignesNettoyees: statsObj?.lignes_traitees ?? 0,
+                                        valeursManquantesCorrigees: statsObj?.valeurs_manquantes_corrigees ?? 0,
+                                        anomaliesDetectees: statsObj?.anomalies_detectees ?? 0,
+                                    }}
+                                />
+
+                                <PreprocessResultSection result={analysisResult} />
+                            </>
                         ) : (
                             <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm flex flex-col items-center justify-center">
                                 <FileText className="w-12 h-12 text-gray-300 mb-3" />
@@ -246,7 +272,6 @@ export default function UploadPage(): React.JSX.Element {
                 onSuccess={refreshStats}
             />
 
-            {/* Klaaro Assistant branché sur l'importation & le nettoyage de données */}
             <KlaaroChatDrawer
                 activeRapportId={selectedRapportId}
                 chartData={chartDataForKlaaro}

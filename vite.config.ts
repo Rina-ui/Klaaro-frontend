@@ -7,4 +7,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  define: {
+    // Permet de gérer les bibliothèques qui cherchent process.env dans le navigateur
+    'process.env': {},
+  },
 })
