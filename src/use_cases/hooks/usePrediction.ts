@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from './useAuth.ts';
-import { useLocalStorageState } from './useLocalStorageState.ts';
 import { HttpRapportRepository } from '../../infrastructure/api/HttpRapportRepository.ts';
 import type { SummaryMetrics, MetricOverview, InsightReport } from '../../entities/PredictionData.ts';
 
@@ -30,7 +29,7 @@ interface ChartDataPoint {
     Prevision: number | null;
 }
 
-// Ce qu'on sauvegarde en base (Rapport type "prediction") pour tout réhydrater d'un coup
+// Format sauvegardé en base (Rapport de type "prediction")
 interface StoredPredictionState {
     metrics: MetricOverview;
     insight: InsightReport;
@@ -48,31 +47,50 @@ export function usePredictions() {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    // 🗄️ Cache instantané localStorage, réhydraté par le backend juste après
-    const [metrics, setMetrics] = useLocalStorageState<MetricOverview>('klaaro_pred_metrics', emptyMetrics);
-    const [insight, setInsight] = useLocalStorageState<InsightReport>('klaaro_pred_insight', emptyInsight);
-    const [summary, setSummary] = useLocalStorageState<SummaryMetrics>('klaaro_pred_summary', emptySummary);
-    const [chartData, setChartData] = useLocalStorageState<ChartDataPoint[]>('klaaro_pred_chart', []);
-    const [lastGeneratedAt, setLastGeneratedAt] = useLocalStorageState<string | null>('klaaro_pred_date', null);
+    // ✅ ÉTATS REACT PURS (Remplacement complet de useLocalStorageState)
+    const [metrics, setMetrics] = useState<MetricOverview>(emptyMetrics);
+    const [insight, setInsight] = useState<InsightReport>(emptyInsight);
+    const [summary, setSummary] = useState<SummaryMetrics>(emptySummary);
+    const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+    const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
 
-    // 🗄️ Va chercher la dernière prédiction sauvegardée en base au montage,
-    // pour ne pas perdre le résultat en changeant de page ou d'appareil.
+    // ✅ Récupère la dernière prédiction sauvegardée en base pour l'utilisateur actuellement connecté
     const loadLatestPrediction = useCallback(async () => {
-        if (!user?.id || !token) return;
+        if (!user?.id || !token) {
+            // Reinitialisation des états si non connecté
+            setMetrics(emptyMetrics);
+            setInsight(emptyInsight);
+            setSummary(emptySummary);
+            setChartData([]);
+            setLastGeneratedAt(null);
+            return;
+        }
+
         try {
             const latest = await rapportRepo.getLatestRapportByType(token, user.id, 'prediction');
-            if (latest) {
+            if (latest && latest.content && latest.content.trim() !== "") {
                 const stored = JSON.parse(latest.content) as StoredPredictionState;
-                setMetrics(stored.metrics);
-                setInsight(stored.insight);
-                setSummary(stored.summary);
-                setChartData(stored.chartData);
-                setLastGeneratedAt(stored.generatedAt);
+                setMetrics(stored.metrics || emptyMetrics);
+                setInsight(stored.insight || emptyInsight);
+                setSummary(stored.summary || emptySummary);
+                setChartData(stored.chartData || []);
+                setLastGeneratedAt(stored.generatedAt || null);
+            } else {
+                // Aucun historique trouvé pour cet utilisateur
+                setMetrics(emptyMetrics);
+                setInsight(emptyInsight);
+                setSummary(emptySummary);
+                setChartData([]);
+                setLastGeneratedAt(null);
             }
         } catch (err) {
             console.error("Impossible de recharger la dernière prédiction depuis le backend :", err);
+            setMetrics(emptyMetrics);
+            setInsight(emptyInsight);
+            setSummary(emptySummary);
+            setChartData([]);
+            setLastGeneratedAt(null);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.id, token]);
 
     useEffect(() => {
@@ -165,7 +183,7 @@ export function usePredictions() {
             setSummary(newSummary);
             setLastGeneratedAt(generatedAt);
 
-            // 🗄️ Sauvegarde en base pour survivre à la navigation et au refresh
+            // Sauvegarde en base PostgreSQL rattachée au compte utilisateur
             await persistPrediction({
                 metrics: newMetrics,
                 insight: newInsight,
@@ -181,7 +199,6 @@ export function usePredictions() {
         } finally {
             setLoading(false);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
     const handleNewSimulation = () => {

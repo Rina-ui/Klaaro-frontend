@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { usePredictions } from "../../../use_cases/hooks/usePrediction.ts";
-import { useRapportHistory } from "../../../use_cases/hooks/useRapportHistory.ts";
+import { useRapportHistory, type RapportEntity } from "../../../use_cases/hooks/useRapportHistory.ts";
 import MetricGauges from "./MetricGauges.tsx";
 import PredictionChart from "./PredictionChart.tsx";
 import InsightCard from "./InsightCard.tsx";
@@ -27,14 +27,15 @@ export default function PredictionsPage(): React.JSX.Element {
 
     const { history, loading: historyLoading, refresh: refreshHistory } = useRapportHistory('prediction');
 
-    // État réactif pour stocker l'ID du rapport actif
+    // État réactif pour stocker l'ID du rapport actif transmis à KlaaroChatDrawer
     const [selectedRapportId, setSelectedRapportId] = useState<string | null>(null);
 
-    // Après une nouvelle prédiction réussie, on rafraîchit la liste d'historique
+    // Rafraîchissement automatique de la liste d'historique après la génération d'une nouvelle prédiction
     useEffect(() => {
-        if (lastGeneratedAt) refreshHistory();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [lastGeneratedAt]);
+        if (lastGeneratedAt) {
+            refreshHistory();
+        }
+    }, [lastGeneratedAt, refreshHistory]);
 
     return (
         <div className="w-full text-[#1a1a1a] font-sans p-4 md:p-8 antialiased flex flex-col items-center min-h-screen relative overflow-hidden">
@@ -52,9 +53,13 @@ export default function PredictionsPage(): React.JSX.Element {
                 <RapportHistorySelect
                     history={history}
                     loading={historyLoading}
-                    onSelect={(rapport) => {
-                        setSelectedRapportId(rapport.id); // Liaison de l'ID du rapport sélectionné
-                        loadRapport(rapport.content);
+                    onSelect={(rapport: RapportEntity) => {
+                        if (rapport?.id) {
+                            setSelectedRapportId(rapport.id);
+                        }
+                        if (rapport?.content) {
+                            loadRapport(rapport.content);
+                        }
                     }}
                     label="Revoir une ancienne prédiction..."
                 />

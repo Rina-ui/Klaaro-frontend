@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UploadCloud, Link2, Camera, AlertTriangle, FileText, BarChart3, Clock } from 'lucide-react';
 import { useUploadDashboard } from "../../../use_cases/hooks/useUploadDashboard.ts";
-import { useLocalStorageState } from "../../../use_cases/hooks/useLocalStorageState.ts";
 import { useRapportHistory, type RapportEntity } from "../../../use_cases/hooks/useRapportHistory.ts";
 import { formatRelativeDate } from "../../../use_cases/utils/formatRelativeDate.ts";
 import RapportHistorySelect from "../../components/shared/RapportHistorySelect.tsx";
@@ -16,7 +15,9 @@ import AnalysisResultCard from "../../components/shared/AnalysisResultCard.tsx";
 
 export default function UploadPage(): React.JSX.Element {
     const [isDbModalOpen, setIsDbModalOpen] = React.useState(false);
-    const [activeSubTab, setActiveSubTab] = useLocalStorageState<'import' | 'analysis'>('klaaro_upload_active_tab', 'import');
+
+    // ✅ État React pur (Remplacement de useLocalStorageState)
+    const [activeSubTab, setActiveSubTab] = useState<'import' | 'analysis'>('import');
 
     // État pour conserver le dernier fichier binaire sélectionné par l'utilisateur
     const [lastUploadedFile, setLastUploadedFile] = useState<File | null>(null);
@@ -57,6 +58,7 @@ export default function UploadPage(): React.JSX.Element {
 
     useEffect(() => {
         if (analysisResult) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setActiveSubTab('analysis');
             refreshHistory();
             const rapportId = (rapportObj?.id as string) || (rawResult?.id as string);
@@ -64,7 +66,7 @@ export default function UploadPage(): React.JSX.Element {
                 setSelectedRapportId(rapportId);
             }
         }
-    }, [analysisResult, refreshHistory, setActiveSubTab]);
+    }, [analysisResult, refreshHistory]);
 
     const chartDataForKlaaro = chartDataArray?.map((point) => ({
         date: point.name,

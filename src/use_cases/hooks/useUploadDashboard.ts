@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "./useAuth.ts";
-import { useLocalStorageState } from "./useLocalStorageState.ts";
 import { HttpDocumentRepository } from "../../infrastructure/api/HttpDocumentRepository.ts";
 import { HttpRapportRepository } from "../../infrastructure/api/HttpRapportRepository.ts";
 import type { UploadStats } from "../../entities/UploadStats.ts";
@@ -35,7 +34,7 @@ export interface PreparedChart {
 export interface PreprocessResponse {
     status: string;
     format_origine: string;
-    charts: PreparedChart[]; // L'API renvoie désormais ce tableau de graphiques
+    charts: PreparedChart[];
     rapport: PreprocessRapport;
     apercu_donnees: Array<Record<string, any>>;
 }
@@ -45,11 +44,10 @@ export function useUploadDashboard() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
 
-    // États Klaaro ML — persistés en localStorage (cache instantané) ET en base
-    // via l'entité Rapport (type: "preprocessing"), pour survivre à la navigation,
-    // au refresh, et être réellement consultables plus tard depuis un autre appareil.
-    const [analysisResult, setAnalysisResult] = useLocalStorageState<PreprocessResponse | null>('klaaro_last_analysis', null);
-    const [lastAnalysisFileName, setLastAnalysisFileName] = useLocalStorageState<string | null>('klaaro_last_analysis_filename', null);
+    // ✅ ÉTATS REACT PURS (Sécurité inter-utilisateurs & zéro fuit dans le localStorage)
+    const [analysisResult, setAnalysisResult] = useState<PreprocessResponse | null>(null);
+    const [lastAnalysisFileName, setLastAnalysisFileName] = useState<string | null>(null);
+
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState<boolean>(false);
 
@@ -101,22 +99,25 @@ export function useUploadDashboard() {
         }
     }, [user?.id, token]);
 
+    // ✅ Charge la dernière analyse appartenant EXCLUSIVEMENT à l'utilisateur connecté via JWT
     const loadLatestAnalysis = useCallback(async () => {
         if (!token) return;
         try {
             const latest = await rapportRepo.getLatestRapportByType(token, 'preprocessing');
 
-            // 1. On vérifie si "latest" existe et n'est pas vide avant d'essayer de parser
             if (latest && latest.content && latest.content.trim() !== "") {
                 const stored = JSON.parse(latest.content) as { result: PreprocessResponse; fileName: string };
                 setAnalysisResult(stored.result);
                 setLastAnalysisFileName(stored.fileName);
             } else {
-                console.log("Aucune analyse précédente trouvée en base de données.");
+                // Si l'utilisateur n'a pas encore fait d'analyse, réinitialiser explicitement les états
+                setAnalysisResult(null);
+                setLastAnalysisFileName(null);
             }
         } catch (err) {
-            // L'erreur est capturée ici et ne fait plus planter l'application
             console.warn("Impossible de recharger la dernière analyse (vide ou inexistante) :", err);
+            setAnalysisResult(null);
+            setLastAnalysisFileName(null);
         }
     }, [token]);
 
@@ -133,12 +134,17 @@ export function useUploadDashboard() {
         }
     };
 
-    // Initialisation au chargement du composant
+    // Initialisation au chargement du composant ou au changement de compte (jeton JWT)
     useEffect(() => {
         if (token) {
             refreshStats();
             loadRecentDocuments();
             loadLatestAnalysis();
+        } else {
+            // Nettoyage complet lors de la déconnexion
+            setAnalysisResult(null);
+            setLastAnalysisFileName(null);
+            setRecentDocuments([]);
         }
     }, [token, refreshStats, loadRecentDocuments, loadLatestAnalysis]);
 
@@ -227,8 +233,7 @@ export function useUploadDashboard() {
                     progressPercentage: 40
                 }));
 
-                // 🗄️ Sauvegarde en base pour survivre à la navigation, au refresh,
-                // et pour pouvoir "Revoir" une vraie ancienne analyse plus tard.
+                // Sauvegarde directe en BDD rattachée à l'utilisateur authentifié
                 await persistAnalysis(mlData as PreprocessResponse, file.name);
 
             } catch (err: any) {
@@ -240,7 +245,7 @@ export function useUploadDashboard() {
             }
         }
 
-        // ÉTAPE 2 : Sauvegarde dans ta DB (uniquement si l'étape 1 a réussi ou si c'est une image)
+        // ÉTAPE 2 : Sauvegarde dans ta BDD (stockage binaire/document)
         try {
             await saveToDocumentRepository(file, isImage);
 
@@ -261,7 +266,7 @@ export function useUploadDashboard() {
         }
     };
 
-    // Recharge un rapport de type "preprocessing" choisi dans l'historique
+    // Recharge un rapport d'analyse choisi dans l'historique de la BDD
     const loadRapport = (content: string) => {
         try {
             const stored = JSON.parse(content) as { result: PreprocessResponse; fileName: string };
