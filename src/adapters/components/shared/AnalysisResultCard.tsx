@@ -44,7 +44,8 @@ export default function AnalysisResultCard({
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
-                    ...(token && { Authorization: `Bearer ${token}` }),
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
                 },
                 body: formData,
             });
