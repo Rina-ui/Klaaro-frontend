@@ -4,7 +4,6 @@ import { useRapportHistory, type RapportEntity } from "../../../use_cases/hooks/
 import MetricGauges from "./MetricGauges.tsx";
 import PredictionChart from "./PredictionChart.tsx";
 import InsightCard from "./InsightCard.tsx";
-import SummaryCards from "./SummaryCards.tsx";
 import NavigationTabs from "../../components/ui/NavigationTabs.tsx";
 import PredictionConfigBar from "./PredictionConfigBar.tsx";
 import RapportHistorySelect from "../../components/shared/RapportHistorySelect.tsx";
@@ -14,7 +13,6 @@ export default function PredictionsPage(): React.JSX.Element {
     const {
         metrics,
         insight,
-        summary,
         chartData,
         loading,
         error,
@@ -83,8 +81,6 @@ export default function PredictionsPage(): React.JSX.Element {
                         />
                     </div>
                 </div>
-
-                <SummaryCards summary={summary} />
             </div>
 
             {/* Intégration du module de discussion intelligent Klaaro */}

@@ -6,6 +6,7 @@ import {
     PieChart, Pie, Cell,
     XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
 } from 'recharts';
+import { Sparkles } from 'lucide-react';
 
 export interface PreparedChart {
     type: 'bar' | 'line' | 'scatter' | 'pie';
@@ -19,6 +20,8 @@ export interface PreparedChart {
 interface PreprocessResponse {
     status: string;
     format_origine: string;
+    explanation?: string;
+    explications?: string;
     charts: PreparedChart[];
     rapport: {
         lignes_avant: number;
@@ -46,6 +49,9 @@ export default function PreprocessResultSection({ result }: Props): React.JSX.El
     const columns = result.rapport.colonnes_apres || [];
     const dataRows = result.apercu_donnees || [];
     const charts = result.charts || [];
+
+    // Récupération de la synthèse rédigée par l'IA Ollama
+    const mainExplanation = result.explanation || result.explications;
 
     // Déclenche le scroll dès que l'aperçu est activé
     useEffect(() => {
@@ -122,6 +128,20 @@ export default function PreprocessResultSection({ result }: Props): React.JSX.El
 
     return (
         <div className="w-full mt-6 flex flex-col gap-6 transition-all duration-300">
+
+            {/* 🤖 BLOC SYNTHÈSE / EXPLICATION EXPLAINABLE AI (OLLAMA) */}
+            {mainExplanation && (
+                <div className="w-full bg-gradient-to-br from-[#1e5138]/5 via-white to-[#1e5138]/10 p-5 rounded-2xl border border-[#1e5138]/20 shadow-sm flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-[#1e5138]">
+                        <Sparkles className="w-4 h-4 flex-shrink-0" />
+                        <h3 className="text-sm font-bold tracking-tight">Analyse & Interprétation par KLAARO</h3>
+                    </div>
+                    <p className="text-xs text-gray-700 font-medium leading-relaxed whitespace-pre-line">
+                        {mainExplanation}
+                    </p>
+                </div>
+            )}
+
             <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* BLOC RAPPORT DE NETTOYAGE */}

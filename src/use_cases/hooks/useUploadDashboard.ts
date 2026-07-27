@@ -21,7 +21,6 @@ export interface ChartDataItem {
     valeur: number;
 }
 
-// Représente un bloc graphique complet généré par ton service ML
 export interface PreparedChart {
     type: 'bar' | 'line' | 'scatter' | 'pie';
     title: string;
@@ -31,12 +30,21 @@ export interface PreparedChart {
     data: ChartDataItem[];
 }
 
+// 🎯 Interface mise à jour pour recevoir l'explication d'Ollama
 export interface PreprocessResponse {
     status: string;
     format_origine: string;
-    charts: PreparedChart[];
-    rapport: PreprocessRapport;
-    apercu_donnees: Array<Record<string, any>>;
+    explanation?: string;
+    explications?: string;
+    charts?: PreparedChart[];
+    rapport?: PreprocessRapport;
+    apercu_donnees?: Array<Record<string, any>>;
+    stats?: {
+        lignes_traitees?: number;
+        valeurs_manquantes_corrigees?: number;
+        anomalies_detectees?: number;
+    };
+    filename?: string;
 }
 
 export function useUploadDashboard() {
@@ -44,14 +52,12 @@ export function useUploadDashboard() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
 
-    // ✅ ÉTATS REACT PURS (Sécurité inter-utilisateurs & zéro fuit dans le localStorage)
     const [analysisResult, setAnalysisResult] = useState<PreprocessResponse | null>(null);
     const [lastAnalysisFileName, setLastAnalysisFileName] = useState<string | null>(null);
 
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState<boolean>(false);
 
-    // Historique des documents
     const [recentDocuments, setRecentDocuments] = useState<DocumentEntity[]>([]);
 
     const [stats, setStats] = useState<UploadStats>({
@@ -94,12 +100,11 @@ export function useUploadDashboard() {
                     scannedPhotosMax: data.scannedPhotosMax ?? 50
                 });
             } catch (err) {
-                console.error("Erreur stats (Vérifie la méthode HTTP/URL sur le backend):", err);
+                console.error("Erreur stats :", err);
             }
         }
     }, [user?.id, token]);
 
-    // ✅ Charge la dernière analyse appartenant EXCLUSIVEMENT à l'utilisateur connecté via JWT
     const loadLatestAnalysis = useCallback(async () => {
         if (!token) return;
         try {
@@ -110,12 +115,11 @@ export function useUploadDashboard() {
                 setAnalysisResult(stored.result);
                 setLastAnalysisFileName(stored.fileName);
             } else {
-                // Si l'utilisateur n'a pas encore fait d'analyse, réinitialiser explicitement les états
                 setAnalysisResult(null);
                 setLastAnalysisFileName(null);
             }
         } catch (err) {
-            console.warn("Impossible de recharger la dernière analyse (vide ou inexistante) :", err);
+            console.warn("Impossible de recharger la dernière analyse :", err);
             setAnalysisResult(null);
             setLastAnalysisFileName(null);
         }
@@ -134,14 +138,12 @@ export function useUploadDashboard() {
         }
     };
 
-    // Initialisation au chargement du composant ou au changement de compte (jeton JWT)
     useEffect(() => {
         if (token) {
             refreshStats();
             loadRecentDocuments();
             loadLatestAnalysis();
         } else {
-            // Nettoyage complet lors de la déconnexion
             setAnalysisResult(null);
             setLastAnalysisFileName(null);
             setRecentDocuments([]);
@@ -201,13 +203,13 @@ export function useUploadDashboard() {
             steps: { ocr: isImage ? 'processing' : 'completed', categorization: 'idle', fiscalImpact: 'idle' }
         });
 
-        // ÉTAPE 1 : Appel & Validation ML de l'API FastAPI
+        // ÉTAPE 1 : Appel de /ml/explain pour obtenir à la fois l'analyse et la synthèse Ollama
         if (!isImage) {
             try {
                 const formData = new FormData();
                 formData.append('file', file);
 
-                const response = await fetch('http://localhost:8000/ml/preprocess', {
+                const response = await fetch('http://localhost:8000/ml/explain', {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -216,7 +218,7 @@ export function useUploadDashboard() {
                 });
 
                 if (response.status === 404) {
-                    throw new Error("L'URL /ml/preprocess n'est pas trouvée. Vérifie l'inclusion de ml_router dans ton main.py.");
+                    throw new Error("L'URL /ml/explain n'est pas trouvée sur le backend FastAPI.");
                 }
 
                 const mlData = await response.json();
@@ -233,11 +235,11 @@ export function useUploadDashboard() {
                     progressPercentage: 40
                 }));
 
-                // Sauvegarde directe en BDD rattachée à l'utilisateur authentifié
+                // Sauvegarde en base de données
                 await persistAnalysis(mlData as PreprocessResponse, file.name);
 
             } catch (err: any) {
-                const errMsg = err.message || "Erreur lors du traitement ML.";
+                const errMsg = err.message || "Erreur lors de la génération des explications.";
                 setUploadError(errMsg);
                 setAnalysis(prev => ({ ...prev, fileName: "Fichier refusé/Erreur API" }));
                 setIsUploading(false);
@@ -245,7 +247,7 @@ export function useUploadDashboard() {
             }
         }
 
-        // ÉTAPE 2 : Sauvegarde dans ta BDD (stockage binaire/document)
+        // ÉTAPE 2 : Sauvegarde dans le dépôt binaire
         try {
             await saveToDocumentRepository(file, isImage);
 
@@ -259,14 +261,13 @@ export function useUploadDashboard() {
             await loadRecentDocuments();
         } catch (error) {
             console.error(error);
-            setUploadError("Fichier validé par le ML, mais échec de la synchronisation de stockage interne.");
+            setUploadError("Fichier analysé par le ML, mais échec de la synchronisation de stockage interne.");
             setAnalysis(prev => ({ ...prev, fileName: "Erreur sauvegarde DB" }));
         } finally {
             setIsUploading(false);
         }
     };
 
-    // Recharge un rapport d'analyse choisi dans l'historique de la BDD
     const loadRapport = (content: string) => {
         try {
             const stored = JSON.parse(content) as { result: PreprocessResponse; fileName: string };
