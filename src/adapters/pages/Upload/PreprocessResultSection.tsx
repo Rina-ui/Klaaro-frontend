@@ -6,7 +6,6 @@ import {
     PieChart, Pie, Cell,
     XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
 } from 'recharts';
-import { Sparkles } from 'lucide-react';
 
 export interface PreparedChart {
     type: 'bar' | 'line' | 'scatter' | 'pie';
@@ -20,8 +19,6 @@ export interface PreparedChart {
 interface PreprocessResponse {
     status: string;
     format_origine: string;
-    explanation?: string;
-    explications?: string;
     charts: PreparedChart[];
     rapport: {
         lignes_avant: number;
@@ -34,10 +31,18 @@ interface PreprocessResponse {
 }
 
 interface Props {
-    result: PreprocessResponse;
+    result: Partial<PreprocessResponse> | null | undefined;
 }
 
 const COLORS = ['#1e5138', '#2d7a54', '#40a773', '#73cda2', '#a6e3c5'];
+
+const EMPTY_RAPPORT = {
+    lignes_avant: 0,
+    lignes_apres: 0,
+    colonnes_avant: [] as string[],
+    colonnes_apres: [] as string[],
+    actions: [] as string[]
+};
 
 export default function PreprocessResultSection({ result }: Props): React.JSX.Element {
     const [showPreview, setShowPreview] = useState(false);
@@ -46,12 +51,14 @@ export default function PreprocessResultSection({ result }: Props): React.JSX.El
     // Référence pour cibler l'ancre du tableau d'aperçu
     const previewRef = useRef<HTMLDivElement>(null);
 
-    const columns = result.rapport.colonnes_apres || [];
-    const dataRows = result.apercu_donnees || [];
-    const charts = result.charts || [];
-
-    // Récupération de la synthèse rédigée par l'IA Ollama
-    const mainExplanation = result.explanation || result.explications;
+    // ✅ Garde-fou : si le résultat n'a pas la forme attendue (ex: réponse OCR
+    // plutôt que réponse de prétraitement ML), on ne plante jamais, on affiche
+    // un état vide à la place.
+    const rapport = result?.rapport ?? EMPTY_RAPPORT;
+    const columns = rapport.colonnes_apres ?? [];
+    const dataRows = result?.apercu_donnees ?? [];
+    const charts = result?.charts ?? [];
+    const hasRapport = !!result?.rapport;
 
     // Déclenche le scroll dès que l'aperçu est activé
     useEffect(() => {
@@ -126,22 +133,20 @@ export default function PreprocessResultSection({ result }: Props): React.JSX.El
         }
     };
 
+    // Si on n'a vraiment rien d'exploitable (ni rapport, ni graphiques), on
+    // affiche un état vide clair plutôt qu'un bloc à moitié rendu.
+    if (!hasRapport && charts.length === 0) {
+        return (
+            <div className="w-full mt-6 bg-white p-8 rounded-2xl border border-gray-100 shadow-sm text-center">
+                <p className="text-sm text-gray-400 italic">
+                    Ce résultat ne contient pas de rapport de prétraitement exploitable pour cet affichage.
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div className="w-full mt-6 flex flex-col gap-6 transition-all duration-300">
-
-            {/* 🤖 BLOC SYNTHÈSE / EXPLICATION EXPLAINABLE AI (OLLAMA) */}
-            {mainExplanation && (
-                <div className="w-full bg-gradient-to-br from-[#1e5138]/5 via-white to-[#1e5138]/10 p-5 rounded-2xl border border-[#1e5138]/20 shadow-sm flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-[#1e5138]">
-                        <Sparkles className="w-4 h-4 flex-shrink-0" />
-                        <h3 className="text-sm font-bold tracking-tight">Analyse & Interprétation par KLAARO</h3>
-                    </div>
-                    <p className="text-xs text-gray-700 font-medium leading-relaxed whitespace-pre-line">
-                        {mainExplanation}
-                    </p>
-                </div>
-            )}
-
             <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* BLOC RAPPORT DE NETTOYAGE */}
@@ -149,20 +154,24 @@ export default function PreprocessResultSection({ result }: Props): React.JSX.El
                     <div>
                         <h3 className="text-lg font-bold text-gray-900 mb-2">Rapport de Pretraitement</h3>
                         <p className="text-sm text-gray-600 mb-1">
-                            Format decode : <span className="font-bold text-[#1e5138]">.{result.format_origine.toUpperCase()}</span>
+                            Format decode : <span className="font-bold text-[#1e5138]">.{(result?.format_origine ?? 'inconnu').toUpperCase()}</span>
                         </p>
                         <p className="text-sm text-gray-600 mb-4">
-                            Lignes : <span className="font-semibold">{result.rapport.lignes_avant}</span> → <span className="font-bold text-[#1e5138]">{result.rapport.lignes_apres}</span>
+                            Lignes : <span className="font-semibold">{rapport.lignes_avant}</span> → <span className="font-bold text-[#1e5138]">{rapport.lignes_apres}</span>
                         </p>
 
                         <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Actions de nettoyage</h4>
-                        <ul className="space-y-1 max-h-[140px] overflow-y-auto mb-4">
-                            {result.rapport.actions.map((action, idx) => (
-                                <li key={idx} className="text-xs text-gray-600 flex items-center gap-1">
-                                    <span className="text-[#1e5138] font-bold">✓</span> {action}
-                                </li>
-                            ))}
-                        </ul>
+                        {rapport.actions.length > 0 ? (
+                            <ul className="space-y-1 max-h-[140px] overflow-y-auto mb-4">
+                                {rapport.actions.map((action, idx) => (
+                                    <li key={idx} className="text-xs text-gray-600 flex items-center gap-1">
+                                        <span className="text-[#1e5138] font-bold">✓</span> {action}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-xs text-gray-400 italic mb-4">Aucune action de nettoyage enregistrée.</p>
+                        )}
                     </div>
 
                     <button

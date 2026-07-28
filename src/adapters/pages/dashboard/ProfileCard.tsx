@@ -9,7 +9,7 @@ export default function ProfileCard() {
     return (
         <div className="bg-white p-3.5 rounded-xl border border-gray-100 h-[250px] flex flex-col items-center text-center justify-between shadow-sm">
             <div className="flex flex-col items-center w-full mt-1">
-                {/* CORRECTION : Avatar et textes dynamiques */}
+                {/* Avatar et textes dynamiques */}
                 <img
                     src={avatarUrl}
                     alt="Avatar"
@@ -26,11 +26,6 @@ export default function ProfileCard() {
                 </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-1 w-full border-t border-gray-100 pt-2.5 text-center">
-                <div><span className="text-[9px] text-gray-400 block">Projets</span><span className="font-bold text-xs">12</span></div>
-                <div><span className="text-[9px] text-gray-400 block">Analyses</span><span className="font-bold text-xs">173</span></div>
-                <div><span className="text-[9px] text-gray-400 block">Preds</span><span className="font-bold text-xs">820</span></div>
-            </div>
         </div>
     )
 }
