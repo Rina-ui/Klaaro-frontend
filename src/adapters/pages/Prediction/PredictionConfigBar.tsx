@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FileSpreadsheet, BrainCircuit, Loader2 } from 'lucide-react';
 import { useAuth } from '../../../use_cases/hooks/useAuth.ts';
+import { API_BASE_URL } from '../../../config/api.ts';
 
 interface ConfigBarProps {
     onPredict: (file: File, targetCol: string, nDays: number) => void;
@@ -16,10 +17,6 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
     const [columnsLoading, setColumnsLoading] = useState(false);
     const [columnsError, setColumnsError] = useState<string | null>(null);
 
-    // Dès qu'un fichier est choisi, on lit ses colonnes.
-    // Pour un CSV : lecture locale instantanée (juste la 1ère ligne), pas d'appel réseau.
-    // Pour un Excel : on n'a pas de lib de parsing xlsx côté front, donc on passe
-    // par /ml/preprocess en dernier recours (plus lent, mais rare en pratique).
     const readCsvColumnsLocally = (file: File): Promise<string[]> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -38,7 +35,6 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
                 }
             };
             reader.onerror = () => reject(new Error("Impossible de lire le fichier."));
-            // On ne lit que les 64 premiers Ko : largement suffisant pour la 1ère ligne, beaucoup plus rapide sur un gros fichier
             reader.readAsText(file.slice(0, 65536));
         });
     };
@@ -66,7 +62,6 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
             return;
         }
 
-        // Fichier Excel : pas de parsing local, on passe par le backend
         if (!token) return;
 
         setColumnsLoading(true);
@@ -74,7 +69,8 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await fetch('http://localhost:8000/ml/preprocess', {
+            // 2. Correction : Utilisation des backticks `...` pour interpoler la variable
+            const response = await fetch(`${API_BASE_URL}/ml/preprocess`, {
                 method: 'POST',
                 body: formData,
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -103,8 +99,6 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
 
     return (
         <form onSubmit={handleSubmit} className="w-full bg-[#f1f3f2] p-4 rounded-[24px] border border-gray-200/30 shadow-sm flex flex-col md:flex-row items-center gap-4 mb-6">
-
-            {/* Input Fichier */}
             <div className="flex-1 w-full relative flex items-center justify-center border-2 border-dashed border-gray-300 hover:border-[#1e5138] rounded-xl h-12 transition-colors bg-white cursor-pointer">
                 <input type="file" onChange={handleFileChange} accept=".csv,.xlsx,.xls" className="absolute inset-0 opacity-0 cursor-pointer" required />
                 <div className="flex items-center gap-2 text-gray-500">
@@ -115,8 +109,6 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
                 </div>
             </div>
 
-            {/* Sélecteur de colonne : menu déroulant dès que les colonnes sont connues,
-                sinon champ texte de secours (fichier pas encore choisi / lecture échouée) */}
             <div className="flex-1 w-full">
                 {availableColumns.length > 0 ? (
                     <select
@@ -151,7 +143,6 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
                 )}
             </div>
 
-            {/* Input Jours */}
             <div className="flex-1 w-full flex items-center bg-white border border-gray-200 rounded-xl px-4 h-12 focus-within:border-[#1e5138]">
                 <input
                     type="number"
@@ -164,7 +155,6 @@ export default function PredictionConfigBar({ onPredict, loading }: ConfigBarPro
                 <span className="text-[10px] font-bold text-gray-400 uppercase">Jours</span>
             </div>
 
-            {/* Bouton Soumettre */}
             <button
                 type="submit"
                 disabled={loading || !selectedFile || !targetCol || columnsLoading}

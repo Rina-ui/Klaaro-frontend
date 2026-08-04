@@ -1,3 +1,5 @@
+import {API_BASE_URL} from "../../config/api.ts";
+
 export interface DashboardRecentFile {
     id: string;
     name: string;
@@ -26,7 +28,7 @@ export interface DashboardSummary {
 }
 
 export class HttpDashboardRepository {
-    private baseUrl = "http://127.0.0.1:8000";
+    private baseUrl = `${API_BASE_URL}`;
 
     async getSummary(token: string): Promise<DashboardSummary> {
         const response = await fetch(`${this.baseUrl}/dashboard/summary`, {

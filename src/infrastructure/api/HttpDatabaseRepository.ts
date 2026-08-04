@@ -1,7 +1,8 @@
 import type {DatabaseConnectionData, DatabaseRepository} from "../../domain/repositories/DatabaseRepository.ts";
+import {API_BASE_URL} from "../../config/api.ts";
 
 export class HttpDatabaseRepository implements DatabaseRepository {
-    private baseUrl = "http://127.0.0.1:8000";
+    private baseUrl = `${API_BASE_URL}`;
 
     async connectDatabase(connection: DatabaseConnectionData, token: string): Promise<{ success: boolean; message: string }> {
         const response = await fetch(`${this.baseUrl}/databases/connect`, {

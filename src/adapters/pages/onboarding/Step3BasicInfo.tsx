@@ -5,6 +5,7 @@ import { useOnboarding } from '../../../use_cases/hooks/useOnboarding'
 import { useAuth } from '../../../use_cases/hooks/useAuth'
 import { colors } from "../../../styles/token.ts";
 import PageAnimation from "../../components/ui/PageAnimation.tsx";
+import {API_BASE_URL} from "../../../config/api.ts";
 
 export default function Step3BasicInfo() {
     const navigate = useNavigate()
@@ -60,7 +61,7 @@ export default function Step3BasicInfo() {
 
         try {
             // ÉTAPE A : Inscription de l'utilisateur
-            const response = await fetch('http://127.0.0.1:8000/user/register', {
+            const response = await fetch(`${API_BASE_URL}/user/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -91,7 +92,7 @@ export default function Step3BasicInfo() {
             console.log("Utilisateur créé avec succès !", responseData);
 
             // ÉTAPE B : Connexion automatique immédiate sur ton vrai endpoint JSON (/user/login)
-            const loginResponse = await fetch('http://127.0.0.1:8000/user/login', {
+            const loginResponse = await fetch(`${API_BASE_URL}/user/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

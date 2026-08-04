@@ -1,3 +1,5 @@
+import {API_BASE_URL} from "../../config/api.ts";
+
 export interface ChartDataPoint {
     date: string;
     Historique: number | null;
@@ -30,7 +32,7 @@ export interface RequeteResponse {
 }
 
 export class HttpChatRepository {
-    private baseUrl = "http://127.0.0.1:8000";
+    private baseUrl = `${API_BASE_URL}`;
 
     async askAssistant(
         payload: {

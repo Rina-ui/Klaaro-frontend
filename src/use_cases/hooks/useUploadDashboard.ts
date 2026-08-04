@@ -4,6 +4,8 @@ import { HttpDocumentRepository } from "../../infrastructure/api/HttpDocumentRep
 import { HttpRapportRepository } from "../../infrastructure/api/HttpRapportRepository.ts";
 import type { UploadStats } from "../../entities/UploadStats.ts";
 import type { DocumentEntity } from "../../entities/Document.ts";
+import {API_BASE_URL} from "../../config/api.ts";
+
 
 const docRepo = new HttpDocumentRepository();
 const rapportRepo = new HttpRapportRepository();
@@ -39,12 +41,20 @@ export interface PreprocessResponse {
     apercu_donnees: Array<Record<string, any>>;
 }
 
+// Forme réelle renvoyée par ocr_service.extract_structured_data(...)
+export interface OcrExtractResponse {
+    texte_brut: string[];
+    montants_detectes: number[];
+    dates_detectees: string[];
+    texte_complet: string;
+}
+
 export function useUploadDashboard() {
     const { user, token } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
 
-    // ✅ ÉTATS REACT PURS (Sécurité inter-utilisateurs & zéro fuit dans le localStorage)
+    // ✅ ÉTATS REACT PURS (Sécurité inter-utilisateurs & zéro fuite dans le localStorage)
     const [analysisResult, setAnalysisResult] = useState<PreprocessResponse | null>(null);
     const [lastAnalysisFileName, setLastAnalysisFileName] = useState<string | null>(null);
 
@@ -121,7 +131,7 @@ export function useUploadDashboard() {
         }
     }, [token]);
 
-    const persistAnalysis = async (result: PreprocessResponse, fileName: string) => {
+    const persistAnalysis = async (result: PreprocessResponse | OcrExtractResponse, fileName: string) => {
         if (!token) return;
         try {
             await rapportRepo.createRapport({
@@ -164,12 +174,6 @@ export function useUploadDashboard() {
                     else if (lowerName.endsWith('.pdf')) docType = 'pdf';
                     else if (lowerName.endsWith('.xml')) docType = 'xml';
 
-                    setAnalysis(prev => ({
-                        ...prev,
-                        progressPercentage: 60,
-                        steps: { ...prev.steps, ocr: 'completed', categorization: 'processing' }
-                    }));
-
                     await docRepo.uploadDocument({
                         name: file.name,
                         type: docType,
@@ -201,13 +205,102 @@ export function useUploadDashboard() {
             steps: { ocr: isImage ? 'processing' : 'completed', categorization: 'idle', fiscalImpact: 'idle' }
         });
 
-        // ÉTAPE 1 : Appel & Validation ML de l'API FastAPI
+        // ÉTAPE 1a : Cas PHOTO -> route OCR (/ocr/extract)
+        if (isImage) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`${API_BASE_URL}/ocr/extract`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 404) {
+                    throw new Error("L'URL /ocr/extract n'est pas trouvée. Vérifie l'inclusion du router OCR dans main.py.");
+                }
+
+                const ocrData = (await response.json()) as OcrExtractResponse;
+
+                if (!response.ok) {
+                    throw new Error((ocrData as any).detail || "L'image n'a pas pu être lue par l'OCR.");
+                }
+
+                // On adapte la réponse OCR à la forme attendue par PreprocessResultSection,
+                // pour que l'affichage marche pareil que pour un CSV/Excel, sans dupliquer l'UI.
+                const montants = ocrData.montants_detectes ?? [];
+                const dates = ocrData.dates_detectees ?? [];
+                const lignesTexte = ocrData.texte_brut ?? [];
+
+                let apercuDonnees: Array<Record<string, any>>;
+                let colonnes: string[];
+                const actions: string[] = [];
+
+                if (montants.length > 0) {
+                    // Cas normal : un ticket/facture avec des montants reconnus -> on
+                    // reconstitue les mêmes lignes que image_to_dataframe côté backend.
+                    apercuDonnees = montants.map((montant, i) => ({
+                        ligne: i + 1,
+                        montant,
+                        date: dates[i] ?? null,
+                        source: "OCR"
+                    }));
+                    colonnes = ["ligne", "montant", "date", "source"];
+                    actions.push(`${montants.length} montant(s) détecté(s) sur l'image`);
+                    if (dates.length > 0) actions.push(`${dates.length} date(s) détectée(s)`);
+                } else {
+                    // Repli : aucun montant reconnu, on affiche au moins le texte brut ligne
+                    // par ligne pour que l'utilisateur voie ce que l'OCR a lu, plutôt qu'un
+                    // aperçu vide.
+                    apercuDonnees = lignesTexte.map((texte, i) => ({ ligne: i + 1, texte }));
+                    colonnes = ["ligne", "texte"];
+                    actions.push("Aucun montant reconnu automatiquement, texte brut affiché");
+                }
+
+                const adaptedResult: PreprocessResponse = {
+                    status: "success",
+                    format_origine: "image",
+                    charts: [],
+                    rapport: {
+                        lignes_avant: lignesTexte.length,
+                        lignes_apres: apercuDonnees.length,
+                        colonnes_avant: colonnes,
+                        colonnes_apres: colonnes,
+                        actions
+                    },
+                    apercu_donnees: apercuDonnees
+                };
+
+                setAnalysisResult(adaptedResult);
+                setLastAnalysisFileName(file.name);
+
+                setAnalysis(prev => ({
+                    ...prev,
+                    progressPercentage: 40,
+                    steps: { ...prev.steps, ocr: 'completed', categorization: 'processing' }
+                }));
+
+                await persistAnalysis(adaptedResult, file.name);
+
+            } catch (err: any) {
+                const errMsg = err.message || "Erreur lors de la lecture OCR de l'image.";
+                setUploadError(errMsg);
+                setAnalysis(prev => ({ ...prev, fileName: "Image refusée/Erreur OCR" }));
+                setIsUploading(false);
+                return;
+            }
+        }
+
+        // ÉTAPE 1b : Cas FICHIER (csv/xlsx/etc.) -> route ML (/ml/preprocess)
         if (!isImage) {
             try {
                 const formData = new FormData();
                 formData.append('file', file);
 
-                const response = await fetch('http://localhost:8000/ml/preprocess', {
+                const response = await fetch(`${API_BASE_URL}/ml/preprocess`, {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -233,7 +326,6 @@ export function useUploadDashboard() {
                     progressPercentage: 40
                 }));
 
-                // Sauvegarde directe en BDD rattachée à l'utilisateur authentifié
                 await persistAnalysis(mlData as PreprocessResponse, file.name);
 
             } catch (err: any) {
@@ -259,7 +351,7 @@ export function useUploadDashboard() {
             await loadRecentDocuments();
         } catch (error) {
             console.error(error);
-            setUploadError("Fichier validé par le ML, mais échec de la synchronisation de stockage interne.");
+            setUploadError("Fichier validé, mais échec de la synchronisation de stockage interne.");
             setAnalysis(prev => ({ ...prev, fileName: "Erreur sauvegarde DB" }));
         } finally {
             setIsUploading(false);

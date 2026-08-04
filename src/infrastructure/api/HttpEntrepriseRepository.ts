@@ -1,3 +1,5 @@
+import {API_BASE_URL} from "../../config/api.ts";
+
 export interface AddUserPayload {
     firstname: string;
     lastname: string;
@@ -6,7 +8,7 @@ export interface AddUserPayload {
 }
 
 export class HttpEntrepriseRepository {
-    private baseUrl = "http://127.0.0.1:8000";
+    private baseUrl = `${API_BASE_URL}`;
 
     async addCollaborator(payload: AddUserPayload, token: string): Promise<void> {
         const response = await fetch(`${this.baseUrl}/enterprise/add-user`, {

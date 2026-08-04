@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FileSpreadsheet, Loader2 } from 'lucide-react';
 import { useAuth } from '../../../use_cases/hooks/useAuth.ts';
+import {API_BASE_URL} from "../../../config/api.ts";
 
 interface SimpleDownloadButtonProps {
     filename: string;
@@ -30,7 +31,7 @@ export default function SimpleDownloadButton({
             const formData = new FormData();
             formData.append('file', rawFile);
 
-            const apiUrl = `http://localhost:8000/ml/export?export_format=${exportFormat}`;
+            const apiUrl = `${API_BASE_URL}/ml/export?export_format=${exportFormat}`;
 
             const headers: Record<string, string> = {};
             if (token) {
