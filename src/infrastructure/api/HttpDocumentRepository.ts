@@ -1,5 +1,6 @@
 import type { UploadStats } from "../../entities/UploadStats.ts";
 import type { DocumentEntity } from "../../entities/Document.ts";
+import {API_BASE_URL} from "../../config/api.ts";
 
 export interface UploadDocumentPayload {
     name: string;
@@ -9,7 +10,7 @@ export interface UploadDocumentPayload {
 }
 
 export class HttpDocumentRepository {
-    private baseUrl = "http://127.0.0.1:8000";
+    private baseUrl = `${API_BASE_URL}`;
 
     // Récupération des documents récents filtrés automatiquement par le Token JWT
     async getRecentDocuments(token: string): Promise<DocumentEntity[]> {

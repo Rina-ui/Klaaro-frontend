@@ -4,6 +4,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { LOGIN_CONTENT } from "../../../entities/loginContent.ts";
 import { useAuth } from "../../../use_cases/hooks/useAuth.ts";
 import PageAnimation from "../../components/ui/PageAnimation.tsx";
+import {API_BASE_URL} from "../../../config/api.ts";
 
 export default function LoginPage(): React.JSX.Element {
     const { title, subtitle, fields, forgotPassword, submitBtn, noAccount, registerLink } = LOGIN_CONTENT;
@@ -25,7 +26,7 @@ export default function LoginPage(): React.JSX.Element {
 
         try {
             // Envoi au format JSON classique
-            const response = await fetch('http://127.0.0.1:8000/user/login', {
+            const response = await fetch(`${API_BASE_URL}/user/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

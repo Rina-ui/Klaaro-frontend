@@ -1,7 +1,8 @@
 import type {CreateRapportPayload, RapportEntity} from "../../entities/Report.ts";
+import {API_BASE_URL} from "../../config/api.ts";
 
 export class HttpRapportRepository {
-    private baseUrl = "http://127.0.0.1:8000";
+    private baseUrl = `${API_BASE_URL}`;
 
     async createRapport(payload: CreateRapportPayload, token: string): Promise<RapportEntity> {
         const response = await fetch(`${this.baseUrl}/rapports/`, {

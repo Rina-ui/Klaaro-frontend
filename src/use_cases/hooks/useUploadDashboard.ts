@@ -4,6 +4,8 @@ import { HttpDocumentRepository } from "../../infrastructure/api/HttpDocumentRep
 import { HttpRapportRepository } from "../../infrastructure/api/HttpRapportRepository.ts";
 import type { UploadStats } from "../../entities/UploadStats.ts";
 import type { DocumentEntity } from "../../entities/Document.ts";
+import {API_BASE_URL} from "../../config/api.ts";
+
 
 const docRepo = new HttpDocumentRepository();
 const rapportRepo = new HttpRapportRepository();
@@ -209,7 +211,7 @@ export function useUploadDashboard() {
                 const formData = new FormData();
                 formData.append('file', file);
 
-                const response = await fetch('http://localhost:8000/ocr/extract', {
+                const response = await fetch(`${API_BASE_URL}/ocr/extract`, {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -298,7 +300,7 @@ export function useUploadDashboard() {
                 const formData = new FormData();
                 formData.append('file', file);
 
-                const response = await fetch('http://localhost:8000/ml/preprocess', {
+                const response = await fetch(`${API_BASE_URL}/ml/preprocess`, {
                     method: 'POST',
                     body: formData,
                     headers: {

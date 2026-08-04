@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from './useAuth.ts';
 import { HttpRapportRepository } from '../../infrastructure/api/HttpRapportRepository.ts';
 import type { SummaryMetrics, MetricOverview, InsightReport } from '../../entities/PredictionData.ts';
+import {API_BASE_URL} from "../../config/api.ts";
 
 const rapportRepo = new HttpRapportRepository();
 
@@ -122,7 +123,7 @@ export function usePredictions() {
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await fetch(`http://localhost:8000/ml/explain?target_col=${encodeURIComponent(targetCol)}&n_days=${nDays}`, {
+            const response = await fetch(`${API_BASE_URL}/ml/explain?target_col=${encodeURIComponent(targetCol)}&n_days=${nDays}`, {
                 method: 'POST',
                 body: formData,
                 headers: { 'Authorization': `Bearer ${token}` }

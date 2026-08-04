@@ -30,7 +30,7 @@ export function useConnectDatabase(): UseConnectDatabaseResult {
             // accepte maintenant ce format grâce aux alias Pydantic (dbType, databaseName).
             // L'identité de l'utilisateur passe uniquement par le token JWT, plus besoin
             // d'envoyer user_id manuellement.
-            const response = await fetch('http://localhost:8000/databases/connect', {
+            const response = await fetch('${API_BASE_URL}/databases/connect', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

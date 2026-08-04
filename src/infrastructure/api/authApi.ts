@@ -1,4 +1,6 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import {API_BASE_URL} from "../../config/api.ts";
+
+const BASE_URL = import.meta.env.VITE_API_URL || `${API_BASE_URL}`
 
 export interface RegisterPayload {
     firstname: string
